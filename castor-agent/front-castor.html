@@ -10738,13 +10738,15 @@
             const r = await fetch(url, { cache: 'no-store' });
             const j = await _safeJson(r);
             const baseRoutes = (j && j.ok && j.data && j.data.routes) || [];
-            // Admin: anexa pseudo-rotas com tarefas avulsas (route_id NULL em
-            // castor_client_interactions) para o widget "Progresso por dia"
-            // refletir tudo que está no kanban central.
+            // Anexa pseudo-rotas com tarefas avulsas (route_id NULL em
+            // castor_client_interactions) — admin agrega por vendedor;
+            // vendedor vê apenas as próprias. Mantém o widget "Progresso
+            // por dia" e o contador "Roteiros" coerentes com o kanban.
             try {
-              if (_isAdmin() && window.supabaseClient) {
+              if (window.supabaseClient) {
+                const _rpc = _isAdmin() ? 'castor_admin_orphan_tasks' : 'castor_vendor_orphan_tasks';
                 const { data: orph, error: orphErr } = await window.supabaseClient
-                  .rpc('castor_admin_orphan_tasks', { p_caller: userId });
+                  .rpc(_rpc, { p_caller: userId });
                 if (!orphErr && orph && orph.ok && orph.data && Array.isArray(orph.data.routes) && orph.data.routes.length) {
                   return baseRoutes.concat(orph.data.routes);
                 }
@@ -12027,6 +12029,7 @@
         function fmtDate(s) { try { return new Date(s).toLocaleDateString('pt-BR'); } catch (e) { return ''; } }
         let currentCode = null;
         let currentClient = null;
+        let currentFeedbacks = [];
         function statusColor(st) {
           return ({ ATIVO: '#10b981', EM_RISCO: '#f59e0b', REATIVAR: '#ef4444', INATIVO: '#9ca3af', DORMENTE: '#6366f1' })[st] || '#6b7280';
         }
@@ -12067,6 +12070,7 @@
           const c = data.client || {};
           currentClient = c;
           const feedbacks = data.feedbacks || [];
+          currentFeedbacks = feedbacks;
           const routes = data.routes || [];
           $('clientDetailLoading').style.display = 'none';
           $('clientDetailContent').style.display = 'block';
@@ -12182,7 +12186,26 @@
               `urgência: ${_fmt(c.urgencia_score)}`,
               `último pedido: ${_fmt(c.ultima_compra_at || c.ultimo_pedido_at)}`
             ].join('\n');
-            const prompt = `Analise o cliente abaixo (dados já consolidados — NÃO chame get_client_profile, são suficientes).\n\n${ctxLines}\n\nDevolva em markdown:\n1. **Situação atual** (1 frase)\n2. **Próximo passo recomendado**\n3. **Script curto de abordagem** para o vendedor\n\nSeja objetivo e use os números acima. Se algum campo estiver "—", ignore.`;
+            // Histórico de visitas/feedbacks recentes — fundamental para que a
+            // IA entenda que já existe negociação em andamento, recusa,
+            // pedido em aberto, etc., e NÃO trate o cliente como "sem
+            // histórico" só porque não há faturamento nos últimos 12m.
+            const fbList = (currentFeedbacks || []).slice(0, 5);
+            let fbBlock = '';
+            if (fbList.length) {
+              const outcomeLabel = { negativo: 'recusa/negativo', voltar_depois: 'voltar depois', convertido: 'pedido fechado', visitou: 'visitou', sem_contato: 'sem contato', pedido_em_negociacao: 'pedido em negociação', pedido_fechado: 'pedido fechado', sem_interesse: 'sem interesse' };
+              const lines = fbList.map(f => {
+                const lbl = outcomeLabel[f.outcome] || f.outcome || '—';
+                const when = f.visited_at ? _fmt(f.visited_at) : '—';
+                const next = f.next_contact_at ? ` (próximo contato: ${_fmt(f.next_contact_at)})` : '';
+                const note = f.notes ? ` — "${String(f.notes).replace(/"/g, "'")}"` : '';
+                return `- ${when}: ${lbl}${next}${note}`;
+              }).join('\n');
+              fbBlock = `\n\nHistórico recente de visitas/feedbacks (mais recente primeiro):\n${lines}`;
+            } else {
+              fbBlock = `\n\nHistórico recente de visitas/feedbacks: nenhum registro.`;
+            }
+            const prompt = `Analise o cliente abaixo (dados já consolidados — NÃO chame get_client_profile, são suficientes).\n\n${ctxLines}${fbBlock}\n\nRegra importante: se houver histórico recente de visitas/feedbacks, sua sugestão DEVE dar continuidade ao último estado registrado (ex.: pedido em negociação → acompanhar o orçamento; recusa/sem interesse → respeitar e propor reabordagem futura; voltar depois → seguir a data combinada). NÃO trate o cliente como "sem histórico" nem recomende "contato imediato para reativação" se já existe interação em andamento.\n\nDevolva em markdown:\n1. **Situação atual** (1 frase, citando o último feedback se existir)\n2. **Próximo passo recomendado** (coerente com o último feedback)\n3. **Script curto de abordagem** para o vendedor (alinhado ao estado atual da negociação)\n\nSeja objetivo e use os números acima. Se algum campo estiver "—", ignore.`;
             const r = await fetch(CHAT_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
