@@ -1,0 +1,1013 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "castor-panel-snapshot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ea6d1022-0519-4085-bc95-a8ce521ccf7c",
+      "name": "Webhook - Snapshot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [15472, -2496],
+      "webhookId": "castor-panel-snapshot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = Date.now();\nconst TTL = 5 * 60 * 1000;\nconst staticData = $getWorkflowStaticData('global');\nconst q = ($json && $json.query) || {};\nconst userId = q.userId ? String(q.userId) : '';\n// Segmentacao: cada fatia tem cache proprio para nao carregar tudo de uma vez.\n// segment ausente = 'full' (compat com o agente/consumidores antigos).\nconst VALID = ['full','reactivation','active','leads','meta'];\nlet segment = String(q.segment || 'full').toLowerCase();\nif (!VALID.includes(segment)) segment = 'full';\nconst cacheKey = 'snapshot_' + (userId || 'anon') + '_' + segment;\nconst hit = staticData && staticData[cacheKey] && staticData[cacheKey + '_at'] && (now - staticData[cacheKey + '_at'] < TTL);\nreturn [{ json: { cache_hit: !!hit, cached: hit ? staticData[cacheKey] : null, user_id: userId, segment, cache_key: cacheKey } }];"
+      },
+      "id": "7be03994-9e45-497f-8bf9-888e795b3959",
+      "name": "Cache check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [15696, -2496]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c090ch1",
+              "leftValue": "={{ $json.cache_hit }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fe601fdb-0c37-47d1-82ef-168903108eda",
+      "name": "Cache hit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [15920, -2496]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, data: $json.cached, error: null, cached: true } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "dedf998a-7525-448e-9d68-804c1a0db908",
+      "name": "Respond from cache",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16128, -2624]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT to_jsonb(s.*) AS row FROM castor_user_scope(NULLIF('{{ $('Cache check').first().json.user_id }}','')::uuid) s;",
+        "options": {}
+      },
+      "id": "e8dc722f-4270-4a94-a020-c3a49f0a01c7",
+      "name": "PG: user role",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16128, -2384],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = ($input.first() && $input.first().json && ($input.first().json.row || $input.first().json)) || {};\nconst role = String(row.role || 'vendedor') || 'vendedor';\nconst vendor_code = row.vendor_code || null;\nfunction arrLit(a){\n  if (!Array.isArray(a) || a.length === 0) return 'NULL';\n  return 'ARRAY[' + a.map(s => \"'\" + String(s).replace(/'/g,\"''\") + \"'\").join(',') + ']::TEXT[]';\n}\nconst estados = Array.isArray(row.estados) ? row.estados : null;\nconst cidades = Array.isArray(row.cidades) ? row.cidades : null;\n// --- Segmentacao: decide quais fatias o SQL deve materializar nesta chamada ---\nconst seg = String(($('Cache check').first().json.segment) || 'full').toLowerCase();\nconst wantClientes   = (seg === 'full' || seg === 'reactivation' || seg === 'active');\nconst wantLeads      = (seg === 'full' || seg === 'leads');\nconst wantMunicipios = (seg === 'full' || seg === 'reactivation' || seg === 'active');\nconst wantMeta       = (seg === 'full' || seg === 'meta');\nlet clientes_where = '';\nif (seg === 'reactivation') clientes_where = 'm.elegivel_reativacao IS TRUE AND';\nelse if (seg === 'active')  clientes_where = '(m.elegivel_reativacao IS NOT TRUE) AND';\n// Sub-selects do agg pre-montados (CTE nao referenciada nao executa no Postgres).\nconst agg_clientes   = wantClientes   ? '(SELECT jsonb_agg(to_jsonb(c.*)) FROM clientes c)'   : 'NULL';\nconst agg_leads      = wantLeads      ? '(SELECT jsonb_agg(to_jsonb(l.*)) FROM leads l)'      : 'NULL';\nconst agg_municipios = wantMunicipios ? '(SELECT jsonb_agg(to_jsonb(m.*)) FROM municipios m)' : 'NULL';\nconst agg_top_prod   = wantMeta ? '(SELECT CASE WHEN uid IS NULL THEN NULL ELSE castor_top_products(uid, 20, NULL) END FROM u)' : 'NULL';\nconst agg_top_grp    = wantMeta ? '(SELECT CASE WHEN uid IS NULL THEN NULL ELSE castor_top_groups(uid, 20) END FROM u)' : 'NULL';\nconst agg_trend      = wantMeta ? '(SELECT CASE WHEN uid IS NULL THEN NULL ELSE castor_monthly_trend(uid, NULL, 24) END FROM u)' : 'NULL';\nconst agg_total_cli  = wantMeta ? '(SELECT COUNT(*) FROM cnt)' : 'NULL';\nconst agg_total_inat = wantMeta ? '(SELECT COUNT(*) FROM cnt WHERE elegivel_reativacao IS TRUE)' : 'NULL';\nconst agg_total_ativ = wantMeta ? '(SELECT COUNT(*) FROM cnt WHERE elegivel_reativacao IS NOT TRUE)' : 'NULL';\nconst agg_total_leads = wantMeta ? '(SELECT COUNT(*) FROM leads)' : 'NULL';\nreturn [{ json: { role, vendor_code, estados, cidades, estados_sql: arrLit(estados), cidades_sql: arrLit(cidades), seg, clientes_where, agg_clientes, agg_leads, agg_municipios, agg_top_prod, agg_top_grp, agg_trend, agg_total_cli, agg_total_inat, agg_total_ativ, agg_total_leads } }];"
+      },
+      "id": "2611f700-625b-4ec4-919c-a453a715b515",
+      "name": "Carry role",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16352, -2384]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH u AS (\n  SELECT NULLIF('{{ $('Cache check').first().json.user_id }}','')::uuid AS uid\n),\nscope AS (\n  SELECT\n    '{{ $('Carry role').first().json.role }}'::TEXT AS role,\n    NULLIF('{{ $('Carry role').first().json.vendor_code || '' }}','')::TEXT AS vendor_code,\n    {{ $('Carry role').first().json.estados_sql }} AS estados,\n    {{ $('Carry role').first().json.cidades_sql }} AS cidades\n),\nlast_fb AS (\n  SELECT DISTINCT ON (cliente_codigo)\n    cliente_codigo, outcome, visited_at, next_contact_at, notes\n  FROM castor_visita_feedback\n  ORDER BY cliente_codigo, visited_at DESC\n),\nclientes AS (\n  -- Escopo do vendedor: por TERRITÃ“RIO (estados/cidades em raw_user_meta_data),\n  -- nÃ£o por a1_vend. O vendedor enxerga TODOS os clientes da(s) UF(s)/cidade(s)\n  -- a que tem acesso, esteja ele atribuÃ­do ou nÃ£o no Protheus. Fallback para\n  -- vendor_code apenas quando o usuÃ¡rio ainda nÃ£o tem territÃ³rio cadastrado\n  -- (legado / prÃ©-onboarding). Admin sempre vÃª tudo.\n  SELECT\n    m.cliente_codigo,\n    m.a1_cod, m.a1_loja, m.a1_nome,\n    NULL::text AS a1_nreduz, m.a1_cgc,\n    m.a1_end, NULL::text AS a1_bairro,\n    m.a1_mun, m.a1_est, m.a1_cep,\n    NULL::text AS a1_ddd, NULL::text AS a1_tel, NULL::text AS a1_email,\n    m.a1_vend, m.vendedor_nome,\n    CASE\n      WHEN m.elegivel_reativacao THEN '2'\n      WHEN m.is_ativo_cadastro THEN '1'\n      WHEN m.status_real = 'ATIVO' THEN '1'\n      WHEN m.status_real = 'EM_RISCO' THEN '3'\n      WHEN m.status_real IN ('REATIVAR','INATIVO','DORMENTE') THEN '2'\n      ELSE '1'\n    END AS a1_ustatus,\n    m.status_real,\n    m.status_cadastral,\n    m.elegivel_reativacao,\n    m.is_ativo_cadastro,\n    m.ramo_codigo, m.ramo_desc,\n    m.status_real AS status_inferido,\n    m.faturamento_12m, m.pedidos_12m, m.ticket_medio_12m,\n    m.faturamento_alltime, m.pedidos_alltime, m.ticket_medio_alltime,\n    m.ultima_nota, m.ultimo_pedido, m.ultima_atividade,\n    m.dias_sem_pedido, m.dias_sem_atividade,\n    m.porte_efetivo, m.porte_origem, m.urgencia_score,\n    to_jsonb(f.*) AS last_feedback\n  FROM castor_client_metrics_v2 m\n  CROSS JOIN scope s\n  LEFT JOIN last_fb f ON f.cliente_codigo = m.cliente_codigo\n  WHERE {{ $('Carry role').first().json.clientes_where }} (\n    TRUE -- escopo removido: vendedor e admin veem a base inteira (identica)\n    OR s.role = 'admin'\n    OR (\n      -- Tem territÃ³rio cadastrado â†’ usa SOMENTE territÃ³rio.\n      (s.estados IS NOT NULL OR s.cidades IS NOT NULL)\n      AND (s.estados IS NULL OR upper(coalesce(m.a1_est,'')) = ANY(s.estados))\n      AND (s.cidades IS NULL OR upper(coalesce(m.a1_mun,'')) = ANY(s.cidades))\n    )\n    OR (\n      -- Sem territÃ³rio MAS com vendor_code â†’ fallback legado por a1_vend.\n      s.estados IS NULL AND s.cidades IS NULL\n      AND s.vendor_code IS NOT NULL AND m.a1_vend = s.vendor_code\n    )\n    OR (\n      -- Sem territÃ³rio E sem vendor_code â†’ vendedor SEM escopo configurado:\n      -- mostra tudo (mesma polÃ­tica dos leads, que jÃ¡ liberam quando vendor_code Ã© NULL,\n      -- e do fallback C do castor_admin_suggest_pool). Admin precisa cadastrar\n      -- estados/cidades no metadata para restringir.\n      s.estados IS NULL AND s.cidades IS NULL AND s.vendor_code IS NULL\n    )\n  )\n),\nleads AS (\n  SELECT\n    z.za7_cliente AS za7_id,\n    NULL::text AS za7_cnpj,\n    z.za7_nome_cli AS za7_nome,\n    z.za7_contato AS za7_tel,\n    NULL::text AS za7_email,\n    NULL::text AS za7_mun,\n    NULL::text AS za7_est,\n    z.za7_assunto AS za7_segmento,\n    'lead' AS za7_status,\n    z.za7_data, z.za7_vend\n  FROM castor_src_za7010 z\n  CROSS JOIN scope s\n  WHERE z.za7_cliente IS NOT NULL AND z.za7_cliente <> ''\n    AND NOT EXISTS (\n      SELECT 1 FROM castor_src_sa1010 sa\n       WHERE sa.a1_cod = z.za7_cliente OR sa.cliente_codigo LIKE z.za7_cliente || '%'\n    )\n    AND NOT EXISTS (\n      SELECT 1 FROM castor_metrics_alltime ma\n       WHERE ma.cliente_codigo LIKE z.za7_cliente || '%'\n    )\n    AND (TRUE OR s.role = 'admin' OR s.vendor_code IS NULL OR z.za7_vend = s.vendor_code)\n),\nmunicipios AS (\n  SELECT DISTINCT\n    c.cc2_mun AS mun, c.cc2_est AS est,\n    g.lat, g.lng\n  FROM castor_src_cc2010 c\n  LEFT JOIN castor_geocode_cache g\n    ON g.scope = 'municipio'\n   AND g.query_key = upper(c.cc2_mun) || '|' || upper(c.cc2_est)\n   AND g.ok\n),\ncnt AS (\n  -- Contagens leves p/ os badges (segmento meta). Mesmo escopo dos clientes,\n  -- mas sem to_jsonb pesado. CTE nao referenciada nao executa no Postgres.\n  SELECT m.elegivel_reativacao\n  FROM castor_client_metrics_v2 m\n  CROSS JOIN scope s\n  WHERE\n    TRUE -- escopo removido: contagem identica p/ vendedor e admin\n    OR s.role = 'admin'\n    OR (\n      (s.estados IS NOT NULL OR s.cidades IS NOT NULL)\n      AND (s.estados IS NULL OR upper(coalesce(m.a1_est,'')) = ANY(s.estados))\n      AND (s.cidades IS NULL OR upper(coalesce(m.a1_mun,'')) = ANY(s.cidades))\n    )\n    OR (\n      s.estados IS NULL AND s.cidades IS NULL\n      AND s.vendor_code IS NOT NULL AND m.a1_vend = s.vendor_code\n    )\n    OR (\n      s.estados IS NULL AND s.cidades IS NULL AND s.vendor_code IS NULL\n    )\n),\nagg AS (\n  SELECT\n    {{ $('Carry role').first().json.agg_clientes }}   AS clientes,\n    {{ $('Carry role').first().json.agg_leads }}      AS leads,\n    {{ $('Carry role').first().json.agg_municipios }} AS municipios,\n    {{ $('Carry role').first().json.agg_top_prod }} AS top_products,\n    {{ $('Carry role').first().json.agg_top_grp }} AS top_groups,\n    {{ $('Carry role').first().json.agg_trend }} AS sales_trend,\n    {{ $('Carry role').first().json.agg_total_cli }} AS total_clientes,\n    {{ $('Carry role').first().json.agg_total_inat }} AS total_inativos,\n    {{ $('Carry role').first().json.agg_total_ativ }} AS total_ativos,\n    {{ $('Carry role').first().json.agg_total_leads }} AS total_leads\n)\nSELECT to_jsonb(agg.*) AS row FROM agg;",
+        "options": {}
+      },
+      "id": "f84e17e8-53a9-4dad-bac2-b96fe3493a53",
+      "name": "PG: snapshot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16576, -2384],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && ($input.first().json.row || $input.first().json)) || {};\nconst ctx = $('Cache check').first().json;\nconst rl  = $('Carry role').first().json;\nconst snapshot = {\n  generated_at: new Date().toISOString(),\n  role: rl.role,\n  vendor_code: rl.vendor_code,\n  totals: { clientes: +(r.total_clientes||0), ativos: +(r.total_ativos||0), inativos: +(r.total_inativos||0), leads: +(r.total_leads||0) },\n  clientes:  r.clientes  || [],\n  leads:     r.leads     || [],\n  municipios:r.municipios || [],\n  top_products: (r.top_products && r.top_products.produtos) || [],\n  top_groups: (r.top_groups && r.top_groups.grupos) || [],\n  sales_trend: (r.sales_trend && r.sales_trend.serie) || []\n};\ntry { const sd = $getWorkflowStaticData('global'); sd[ctx.cache_key] = snapshot; sd[ctx.cache_key + '_at'] = Date.now(); } catch (e) {}\nreturn [{ json: { ok: true, data: snapshot, error: null, cached: false } }];"
+      },
+      "id": "c45351c5-189e-4e1f-9916-09b718bab53f",
+      "name": "Build snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16800, -2384]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5594dee7-29b7-41c1-928a-05596eaf3ede",
+      "name": "Respond Snapshot",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [17008, -2384]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-client-detail",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d1b13634-5a62-407f-8ddf-f68d76cfc0c4",
+      "name": "Webhook - Client Detail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [16144, -1296],
+      "webhookId": "castor-panel-client-detail"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '').trim()\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "5915ffd6-877c-4862-b944-2ce2561ebf94",
+      "name": "Validate Client Detail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16368, -1296]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rcd1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ca0e4821-bfc5-447b-9bea-f5e7c5e4cfcf",
+      "name": "Client Detail valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [16592, -1296]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_client_detail(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.cliente_codigo.replace(/'/g, \"''\") }}'\n) AS row;",
+        "options": {}
+      },
+      "id": "128a8610-7525-44e6-b002-c83436ceb146",
+      "name": "PG: client detail",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16800, -1376],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "91b4969a-1b2e-4134-9a44-52c4d3cdfcc2",
+      "name": "Wrap Client Detail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [17024, -1376]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ea30b913-515c-4b3e-b938-6bef7bf57c37",
+      "name": "Respond Client Detail OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [17248, -1376]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c467d899-fb8a-4626-b789-0abd0ffce013",
+      "name": "Respond Client Detail Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [17184, -1168]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-address-override",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "148bba4e-c422-47b9-acd2-328663e0711a",
+      "name": "Webhook - addr-override",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [15488, -1744],
+      "webhookId": "d238df77-55b6-4042-a743-66d9ad86e269"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '').trim(),\n  endereco: body.endereco ? String(body.endereco) : null,\n  cep: body.cep ? String(body.cep) : null,\n  municipio: body.municipio ? String(body.municipio) : null,\n  uf: body.uf ? String(body.uf) : null,\n  contato_nome: body.contato_nome ? String(body.contato_nome) : null,\n  contato_tel: body.contato_tel ? String(body.contato_tel) : null,\n  contato_email: body.contato_email ? String(body.contato_email) : null,\n  contato_whats: body.contato_whats ? String(body.contato_whats) : null,\n  notes: body.notes ? String(body.notes) : null,\n  lifecycle: body.lifecycle ? String(body.lifecycle) : null\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (out.lifecycle && !['ativo','encerrado','nao_interessado_permanente'].includes(out.lifecycle)) return [{ json: { ok:false, error:'lifecycle invalido' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "5a210ce3-7dde-4781-94f9-de7c32e47331",
+      "name": "Validate addr-override",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [15712, -1744]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "aov0c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1f3b0af3-5eb5-4ce2-ae4d-5ff8294696ba",
+      "name": "addr-override valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [15936, -1744]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_client_address_override_set(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.cliente_codigo.replace(/'/g, \"''\") }}',\n  {{ $json.endereco ? \"'\" + $json.endereco.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.cep ? \"'\" + $json.cep.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.municipio ? \"'\" + $json.municipio.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.uf ? \"'\" + $json.uf.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.contato_nome ? \"'\" + $json.contato_nome.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.contato_tel ? \"'\" + $json.contato_tel.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.contato_email ? \"'\" + $json.contato_email.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.contato_whats ? \"'\" + $json.contato_whats.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.notes ? \"'\" + $json.notes.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.lifecycle ? \"'\" + $json.lifecycle + \"'\" : 'NULL' }}\n) AS row;",
+        "options": {}
+      },
+      "id": "8a9caba4-9857-4d0e-9f16-198c28d04ed6",
+      "name": "PG: addr-override",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16144, -1824],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json && ($input.first().json.row !== undefined ? $input.first().json.row : $input.first().json);\nreturn [{ json: { ok:true, data:r, error:null } }];"
+      },
+      "id": "1c455919-d617-4fbb-86f7-f0422ffb2ea3",
+      "name": "Wrap addr-override",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16336, -1824]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a4c44dc4-7852-4e1d-ba4e-a7b83e178d61",
+      "name": "Respond addr-override OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16544, -1824]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d44448c3-a37b-4eee-bb16-42406b76167e",
+      "name": "Respond addr-override Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16144, -1584]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-client-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "93531a2c-3f06-4871-b030-7018cd739296",
+      "name": "Webhook - client-status",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [16144, -1296],
+      "webhookId": "f191beb4-9446-487c-b317-c8e5947faf63"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '').trim(),\n  lifecycle: String(body.lifecycle || '').trim(),\n  notes: body.notes ? String(body.notes) : null\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (!['ativo','encerrado','nao_interessado_permanente'].includes(out.lifecycle)) return [{ json: { ok:false, error:'lifecycle invalido' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "5665b4b5-25ff-4cc2-9f0f-a97af6ae8543",
+      "name": "Validate client-status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16368, -1296]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cst0c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "efc0aa35-73ef-48a4-827c-0dc9316dd337",
+      "name": "client-status valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [16592, -1296]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_client_status_set(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.cliente_codigo.replace(/'/g, \"''\") }}',\n  '{{ $json.lifecycle }}',\n  {{ $json.notes ? \"'\" + $json.notes.replace(/'/g, \"''\") + \"'\" : 'NULL' }}\n) AS row;",
+        "options": {}
+      },
+      "id": "e580c945-a678-4fb4-b2a4-91357589abef",
+      "name": "PG: client-status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16800, -1376],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json && ($input.first().json.row !== undefined ? $input.first().json.row : $input.first().json);\nreturn [{ json: { ok:true, data:r, error:null } }];"
+      },
+      "id": "98990c40-3dcd-4c95-a718-a9af498bc849",
+      "name": "Wrap client-status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [17024, -1376]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e14b0e8f-4670-4511-b138-95327a2cd682",
+      "name": "Respond client-status OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [17248, -1376]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3fa55c23-7f17-48e9-bc9e-22d13bda3324",
+      "name": "Respond client-status Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16800, -1152]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-recent-changes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "42a1b00e-83fd-47fd-a466-21092aef6b7b",
+      "name": "Webhook - recent-changes",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [15648, -208],
+      "webhookId": "5b423d34-a75e-4b39-8b27-03b4863fe8fd"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  since_hours: (body.since_hours !== undefined && body.since_hours !== null && body.since_hours !== '') ? +body.since_hours : 48,\n  limit: (body.limit !== undefined && body.limit !== null && body.limit !== '') ? +body.limit : 30\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "3284efe6-241b-4a91-bc31-03f867b08498",
+      "name": "Validate recent-changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [15872, -208]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rch0c1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "42744d01-cc0b-4aa9-bfda-918aa9ad3f93",
+      "name": "recent-changes valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [16096, -208]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(jsonb_agg(t), '[]'::jsonb) AS row FROM castor_client_recent_changes(\n  '{{ $json.user_id }}'::uuid,\n  {{ $json.since_hours }},\n  {{ $json.limit }}\n) t;",
+        "options": {}
+      },
+      "id": "4a82d577-16e2-49b3-a3a9-bef6a1836e3d",
+      "name": "PG: recent-changes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [16304, -400],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $input.first().json && ($input.first().json.row !== undefined ? $input.first().json.row : $input.first().json);\nreturn [{ json: { ok:true, data:r, error:null } }];"
+      },
+      "id": "9a3c9b6c-a132-4a6c-ad43-aecb56035fc7",
+      "name": "Wrap recent-changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [16528, -400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d768c6f8-ef14-4788-8f05-9e812ed1ea15",
+      "name": "Respond recent-changes OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16752, -400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "726c7b37-71bc-47cd-b77d-e6f8b3fc492c",
+      "name": "Respond recent-changes Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [16352, 32]
+    },
+    {
+      "parameters": {
+        "content": "## Castor Panel API — Clientes\n\nSnapshot do painel, detalhe do cliente, mudança de status, override de endereço e mudanças recentes.\n\nGerado a partir de Castor-Panel-API (split por domínio). Paths inalterados.",
+        "height": 220,
+        "width": 420,
+        "color": 6
+      },
+      "id": "1ea58aff-99ac-4465-8d13-44d7ca66b030",
+      "name": "Sticky — Castor-Panel-Clients",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [15040, -3200]
+    }
+  ],
+  "connections": {
+    "Webhook - Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Cache check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache check": {
+      "main": [
+        [
+          {
+            "node": "Cache hit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache hit?": {
+      "main": [
+        [
+          {
+            "node": "Respond from cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PG: user role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: user role": {
+      "main": [
+        [
+          {
+            "node": "Carry role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry role": {
+      "main": [
+        [
+          {
+            "node": "PG: snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: snapshot": {
+      "main": [
+        [
+          {
+            "node": "Build snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build snapshot": {
+      "main": [
+        [
+          {
+            "node": "Respond Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Client Detail": {
+      "main": [
+        [
+          {
+            "node": "Validate Client Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Client Detail": {
+      "main": [
+        [
+          {
+            "node": "Client Detail valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client Detail valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: client detail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Client Detail Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: client detail": {
+      "main": [
+        [
+          {
+            "node": "Wrap Client Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Client Detail": {
+      "main": [
+        [
+          {
+            "node": "Respond Client Detail OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - addr-override": {
+      "main": [
+        [
+          {
+            "node": "Validate addr-override",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate addr-override": {
+      "main": [
+        [
+          {
+            "node": "addr-override valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "addr-override valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: addr-override",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond addr-override Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: addr-override": {
+      "main": [
+        [
+          {
+            "node": "Wrap addr-override",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap addr-override": {
+      "main": [
+        [
+          {
+            "node": "Respond addr-override OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - client-status": {
+      "main": [
+        [
+          {
+            "node": "Validate client-status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate client-status": {
+      "main": [
+        [
+          {
+            "node": "client-status valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "client-status valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: client-status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond client-status Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: client-status": {
+      "main": [
+        [
+          {
+            "node": "Wrap client-status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap client-status": {
+      "main": [
+        [
+          {
+            "node": "Respond client-status OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - recent-changes": {
+      "main": [
+        [
+          {
+            "node": "Validate recent-changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate recent-changes": {
+      "main": [
+        [
+          {
+            "node": "recent-changes valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "recent-changes valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: recent-changes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond recent-changes Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: recent-changes": {
+      "main": [
+        [
+          {
+            "node": "Wrap recent-changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap recent-changes": {
+      "main": [
+        [
+          {
+            "node": "Respond recent-changes OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "03d32a206f2d8840fce482e6c587726f18775bd9177e9401c00ca76d3086ad41"
+  }
+}

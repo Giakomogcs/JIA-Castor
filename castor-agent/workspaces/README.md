@@ -17,10 +17,21 @@ Cada subflow declara entrada/saída no padrão `{ok, data, error}`. O agente pri
 | `/castor-rag-docs` | GET | Castor-RAG | Lista metadata atual |
 | `/castor-source-list` | GET | Castor-Source-Manager | Admin: lista CSVs canônicos no Drive (SA1010, SA3010, SF2010, ...) |
 | `/castor-source-replace` | POST | Castor-Source-Manager | Admin: substitui um CSV no Drive preservando `file_id` |
-| `/castor-panel-snapshot` | GET | Castor-Panel-API | **Drive-only.** Retorna `{clientes, leads, municipios, totals}` lendo SA1010/SA3010/SF2010/SC5010/ZA7010/CC2010 do Drive + cruzando com `castor_visita_feedback` e `castor_cnpj_cache`. Cache 5 min em `workflowStaticData`. Query: `userId` |
-| `/castor-panel-route` | POST | Castor-Panel-API | `{user_id, stops:[{cliente_codigo,lat,lng}], origin_lat?, origin_lng?, source?}` → roteiro NN + maps_url + total_km + log em `castor_route_log` |
-| `/castor-panel-feedback` | POST | Castor-Panel-API | `{user_id,cliente_codigo,outcome,custom_days?,notes?,idempotency_key?}` (RPC `castor_register_visit_feedback` via `SET LOCAL request.jwt.claim.sub`) |
-| `/castor-panel-cache-purge` | POST | Castor-Panel-API | Invalida o cache em memória do snapshot (chamar após `/castor-source-replace`) |
+| `/castor-panel-snapshot` | GET | Castor-Panel-Clients | **Drive-only.** Retorna `{clientes, leads, municipios, totals}` lendo SA1010/SA3010/SF2010/SC5010/ZA7010/CC2010 do Drive + cruzando com `castor_visita_feedback` e `castor_cnpj_cache`. Cache 5 min em `workflowStaticData`. Query: `userId`, `segment` (opcional: `reactivation` \| `active` \| `leads` \| `meta`; ausente = `full`). Segmentar evita devolver a base inteira num só request (anti-OOM). |
+| `/castor-panel-route` | POST | Castor-Panel-Routes | `{user_id, stops:[{cliente_codigo,lat,lng}], origin_lat?, origin_lng?, source?}` → roteiro NN + maps_url + total_km + log em `castor_route_log` |
+| `/castor-panel-feedback` | POST | Castor-Panel-CRM | `{user_id,cliente_codigo,outcome,custom_days?,notes?,idempotency_key?}` (RPC `castor_register_visit_feedback` via `SET LOCAL request.jwt.claim.sub`) |
+| `/castor-panel-cache-purge` | POST | Castor-Panel-Admin | Invalida o cache em memória do snapshot (chamar após `/castor-source-replace`) |
+
+> Os 27 webhooks `/castor-panel-*` foram **segmentados** do antigo `Castor-Panel-API` (176 nós) em 4 workflows por domínio — **paths inalterados**. O arquivo original virou `Castor-Panel-API.legacy.json` (aposentado; desative/delete no n8n antes de importar os novos para evitar conflito de path).
+
+### Segmentação do Panel API (4 workflows)
+
+| Workflow | Domínio | Endpoints `/castor-panel-*` |
+|---|---|---|
+| `Castor-Panel-Routes` | Roteirização | route, routes, route-detail, route-metrics, route-save, route-update, route-delete, route-move, route-reassign, route-stop-remove, ai-route |
+| `Castor-Panel-Clients` | Clientes | snapshot, client-detail, client-status, address-override, recent-changes |
+| `Castor-Panel-CRM` | Interações/follow-ups | interaction-add, interaction-list, pending-followups, feedback |
+| `Castor-Panel-Admin` | Gestão/manutenção | admin-suggest-pool, admin-followup-clear, admin-followup-transfer, card-reassign, task-assign, vendor-offboard, cache-purge |
 
 ## Tools registradas no Castor-Agent-IA
 

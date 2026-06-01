@@ -3058,6 +3058,27 @@
         background: rgba(227, 6, 19, 0.15);
         color: var(--color-primary);
       }
+      .tab-count.tab-count-loading {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        padding: 1px 6px;
+      }
+      .tab-count-spin {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: tabCountSpin 0.6s linear infinite;
+      }
+      @keyframes tabCountSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
       .routes-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -8868,6 +8889,9 @@
                 : "";
             const p = new URLSearchParams();
             if (uid) p.set("userId", uid);
+            // ProductsPanel só precisa de analytics (top_products/top_groups/
+            // sales_trend) → usa a fatia leve `meta`, sem baixar clientes/leads.
+            p.set("segment", "meta");
             const url =
               PANEL_SNAPSHOT_URL + (p.toString() ? "?" + p.toString() : "");
             const res = await fetch(url, {
@@ -9777,6 +9801,23 @@
           snapshot: null,
           snapshotLoadedAt: 0,
           municipiosIdx: null,
+          // Cache POR SEGMENTO: cada fatia (reactivation/active/leads/meta) é
+          // carregada uma de cada vez e guardada aqui globalmente, evitando
+          // baixar a base inteira num único request (que derrubava o n8n).
+          seg: {
+            reactivation: { clientes: null, municipios: null, at: 0 },
+            active: { clientes: null, municipios: null, at: 0 },
+            leads: { leads: null, at: 0 },
+            meta: {
+              totals: null,
+              municipios: null,
+              top_products: null,
+              top_groups: null,
+              sales_trend: null,
+              role: null,
+              at: 0,
+            },
+          },
         };
         const SNAPSHOT_TTL_MS = 5 * 60 * 1000;
 
@@ -9849,6 +9890,36 @@
           }
         }
 
+        // Escreve um badge de aba: número, "—" (desconhecido) ou spinner.
+        function setTabBadge(el, val, loading) {
+          if (!el) return;
+          if (loading) {
+            el.classList.add("tab-count-loading");
+            el.innerHTML = '<span class="tab-count-spin" aria-hidden="true"></span>';
+          } else {
+            el.classList.remove("tab-count-loading");
+            el.textContent = val == null ? "\u2014" : String(val);
+          }
+        }
+
+        // Fonte ÚNICA de verdade dos contadores das abas: os TOTAIS globais de
+        // cada segmento (vindos do segmento `meta`). Ficam estáveis e idênticos
+        // em qualquer aba/janela — NÃO são sobrescritos pela contagem filtrada
+        // da aba ativa nem pelo filtro de busca (o que fazia os números "pular"
+        // e divergir entre guias). Enquanto a meta não chegou, mostra spinner.
+        function applyTabBadges(loading) {
+          const elR = document.getElementById("tabCountReact");
+          const elA = document.getElementById("tabCountActive");
+          const elL = document.getElementById("tabCountLeads");
+          const metaSlot = (state.seg && state.seg.meta) || null;
+          const totals = (metaSlot && metaSlot.totals) || null;
+          const haveTotals = !!(metaSlot && metaSlot.at);
+          const showSpin = !!loading && !haveTotals;
+          setTabBadge(elR, totals ? totals.inativos : null, showSpin);
+          setTabBadge(elA, totals ? totals.ativos : null, showSpin);
+          setTabBadge(elL, totals ? totals.leads : null, showSpin);
+        }
+
         function setEmpty(b) {
           document.getElementById("routesEmpty").style.display = b
             ? "block"
@@ -9864,39 +9935,171 @@
             Object.assign({ method: "GET", credentials: "omit" }, opts || {}),
           );
           if (!res.ok) throw new Error("HTTP " + res.status);
-          const j = await res.json();
+          const txt = await res.text();
+          if (!txt || !txt.trim()) {
+            throw new Error(
+              "resposta vazia do servidor (corpo sem JSON). Verifique no n8n se o nó final do workflow Castor-Panel-API faz 'Respond to Webhook' com o snapshot para este segmento.",
+            );
+          }
+          let j;
+          try {
+            j = JSON.parse(txt);
+          } catch (_) {
+            throw new Error(
+              "resposta não-JSON do servidor: " +
+                txt.slice(0, 180).replace(/\s+/g, " "),
+            );
+          }
           if (j && j.ok === false) throw new Error(j.error || "erro");
           return j;
         }
 
-        async function ensureSnapshot(force) {
+        // Recompõe o objeto global `state.snapshot` a partir das fatias já
+        // carregadas. Mantém a MESMA forma que o resto do código espera
+        // (clientes/leads/municipios/totals/...), mas preenchida em pedaços.
+        function rebuildSnapshot() {
+          const s = state.seg;
+          const muni =
+            (s.reactivation.municipios && s.reactivation.municipios.length
+              ? s.reactivation.municipios
+              : null) ||
+            (s.active.municipios && s.active.municipios.length
+              ? s.active.municipios
+              : null) ||
+            (s.meta.municipios && s.meta.municipios.length
+              ? s.meta.municipios
+              : null) ||
+            [];
+          state.snapshot = {
+            role: s.meta.role || null,
+            clientes: [].concat(
+              s.reactivation.clientes || [],
+              s.active.clientes || [],
+            ),
+            leads: s.leads.leads || [],
+            municipios: muni,
+            totals: s.meta.totals || {},
+            top_products: s.meta.top_products || [],
+            top_groups: s.meta.top_groups || [],
+            sales_trend: s.meta.sales_trend || [],
+          };
+          state.municipiosIdx = null;
+        }
+
+        const SEG_VALID = ["reactivation", "active", "leads", "meta"];
+
+        // Promessas em voo, por segmento. Evita que múltiplas chamadas
+        // concorrentes (ex.: re-render, abrir outra aba, polling) disparem
+        // VÁRIOS fetches para a MESMA fatia ao mesmo tempo — era isso que
+        // martelava o n8n (a fatia `meta` leva 7–9 s e era pedida em dobro).
+        const _segInFlight = Object.create(null);
+
+        // Cache compartilhado ENTRE ABAS via localStorage. Uma aba nova reusa o
+        // snapshot recente em vez de refazer a query pesada. Chave por
+        // usuário+segmento; expira junto com o TTL.
+        function segCacheKey(userId, seg) {
+          return "castor_seg_" + (userId || "anon") + "_" + seg;
+        }
+        function readSegCache(userId, seg) {
+          try {
+            const raw = localStorage.getItem(segCacheKey(userId, seg));
+            if (!raw) return null;
+            const obj = JSON.parse(raw);
+            if (!obj || !obj.at || Date.now() - obj.at >= SNAPSHOT_TTL_MS)
+              return null;
+            return obj;
+          } catch (_) {
+            return null;
+          }
+        }
+        function writeSegCache(userId, seg, slot) {
+          try {
+            localStorage.setItem(
+              segCacheKey(userId, seg),
+              JSON.stringify(slot),
+            );
+          } catch (_) {
+            /* quota cheia / modo privado: ignora */
+          }
+        }
+
+        function applySegData(seg, slot, d) {
+          if (seg === "reactivation" || seg === "active") {
+            slot.clientes = d.clientes || [];
+            if (d.municipios && d.municipios.length)
+              slot.municipios = d.municipios;
+          } else if (seg === "leads") {
+            slot.leads = d.leads || [];
+          } else {
+            slot.totals = d.totals || {};
+            if (d.municipios && d.municipios.length)
+              slot.municipios = d.municipios;
+            slot.top_products = d.top_products || [];
+            slot.top_groups = d.top_groups || [];
+            slot.sales_trend = d.sales_trend || [];
+            slot.role = d.role || null;
+          }
+        }
+
+        // Carrega UMA fatia do snapshot (com cache global por TTL) e mescla no
+        // estado. Cada chamada é pequena; o chamador faz uma de cada vez.
+        async function ensureSegment(seg, force) {
+          if (!SEG_VALID.includes(seg)) seg = "meta";
+          const slot = state.seg[seg];
           const now = Date.now();
-          if (
-            !force &&
-            state.snapshot &&
-            now - state.snapshotLoadedAt < SNAPSHOT_TTL_MS
-          )
+          // 1) Cache em memória (mesma aba).
+          if (!force && slot && slot.at && now - slot.at < SNAPSHOT_TTL_MS) {
             return state.snapshot;
+          }
           const ctx = getUserCtx();
+          // 2) Cache entre abas (localStorage): hidrata sem ir ao servidor.
+          if (!force) {
+            const cached = readSegCache(ctx.id, seg);
+            if (cached) {
+              Object.assign(slot, cached);
+              rebuildSnapshot();
+              state.snapshotLoadedAt = cached.at;
+              return state.snapshot;
+            }
+          }
+          // 3) Dedup de requisições em voo: se já há um fetch desta fatia
+          //    rodando, todos aguardam a MESMA promessa.
+          const inflightKey = seg + "|" + (ctx.id || "anon");
+          if (!force && _segInFlight[inflightKey]) {
+            return _segInFlight[inflightKey];
+          }
           const p = new URLSearchParams();
           if (ctx.id) p.set("userId", ctx.id);
-          const url =
-            PANEL_SNAPSHOT_URL + (p.toString() ? "?" + p.toString() : "");
+          p.set("segment", seg);
+          const url = PANEL_SNAPSHOT_URL + "?" + p.toString();
           console.log("[RoutesPanel] /castor-panel-snapshot \u2192", url);
-          const t0 = performance.now();
-          const j = await fetchJson(url);
-          const dt = Math.round(performance.now() - t0);
-          const d = j && j.data;
-          console.log("[RoutesPanel] snapshot ok in", dt + "ms", {
-            clientes: (d && d.clientes && d.clientes.length) || 0,
-            leads: (d && d.leads && d.leads.length) || 0,
-            municipios: (d && d.municipios && d.municipios.length) || 0,
-            totals: d && d.totals,
-          });
-          state.snapshot = d || null;
-          state.snapshotLoadedAt = now;
-          state.municipiosIdx = null;
-          return state.snapshot;
+          const promise = (async () => {
+            const t0 = performance.now();
+            const j = await fetchJson(url);
+            const dt = Math.round(performance.now() - t0);
+            const d = (j && j.data) || {};
+            applySegData(seg, slot, d);
+            slot.at = Date.now();
+            writeSegCache(ctx.id, seg, slot);
+            console.log("[RoutesPanel] segment", seg, "ok in", dt + "ms");
+            rebuildSnapshot();
+            state.snapshotLoadedAt = slot.at;
+            return state.snapshot;
+          })();
+          _segInFlight[inflightKey] = promise;
+          try {
+            return await promise;
+          } finally {
+            delete _segInFlight[inflightKey];
+          }
+        }
+
+        function segForTab(tab) {
+          return tab === "reactivation"
+            ? "reactivation"
+            : tab === "active"
+              ? "active"
+              : "leads";
         }
 
         function describeEmptyHint() {
@@ -10005,31 +10208,69 @@
           setLoading(true);
           state.selected.clear();
           updateSelCount();
+          // Spinner nos badges enquanto a meta (totais) ainda não chegou.
+          applyTabBadges(true);
+          // Reload forçado (após mutações) invalida TODAS as fatias: a aba ativa
+          // e a meta recarregam já; as demais recarregam ao serem abertas.
+          if (force) {
+            try {
+              Object.keys(state.seg).forEach((k) => (state.seg[k].at = 0));
+            } catch (_) {}
+          }
           try {
-            const snap = await ensureSnapshot(!!force);
+            // 1) META primeiro (leve): traz totais p/ os badges e analytics.
+            // NÃO-CRÍTICO: se a fatia meta falhar (ex.: timeout/erro no SQL de
+            // analytics), apenas os badges/totais ficam indisponíveis — as
+            // linhas reais vêm da fatia da aba ativa, então não derrubamos o
+            // painel inteiro por causa dela.
+            try {
+              await ensureSegment("meta", !!force);
+            } catch (metaErr) {
+              console.warn(
+                "[RoutesPanel] meta segment falhou (badges/totais indisponíveis):",
+                metaErr,
+              );
+            }
+            // Badges = TOTAIS globais de cada segmento (fonte única de verdade):
+            // estáveis e iguais em qualquer aba/janela.
+            applyTabBadges(false);
+
+            // Abas que não são de clientes (ex.: "Meu Roteiro") só precisam dos
+            // badges — não baixam fatia de clientes/leads.
+            if (
+              state.tab !== "reactivation" &&
+              state.tab !== "active" &&
+              state.tab !== "leads"
+            ) {
+              render();
+              return;
+            }
+
+            // 2) Só a fatia da aba ATIVA (uma de cada vez, sequencial).
+            const seg = segForTab(state.tab);
+            // Feedback de carregamento NA ABA ATIVA enquanto a fatia chega.
+            try {
+              setTabBadge(
+                document.getElementById("tabCount" + tabKey()),
+                null,
+                true,
+              );
+            } catch (_) {}
+            const snap = await ensureSegment(seg, !!force);
             if (!snap) {
               state.rows = [];
               render();
               return;
             }
 
-            // Atualiza os 3 badges das tabs com o total da população (independente da tab ativa).
-            try {
-              const countReact = deriveReactivation(snap).length;
-              const countActive = deriveActive(snap).length;
-              const countLeads = deriveLeads(snap).length;
-              const elR = document.getElementById("tabCountReact");
-              const elA = document.getElementById("tabCountActive");
-              const elL = document.getElementById("tabCountLeads");
-              if (elR) elR.textContent = String(countReact);
-              if (elA) elA.textContent = String(countActive);
-              if (elL) elL.textContent = String(countLeads);
-            } catch (_) {}
-
             let rows;
             if (state.tab === "reactivation") rows = deriveReactivation(snap);
             else if (state.tab === "active") rows = deriveActive(snap);
             else rows = deriveLeads(snap);
+
+            // Restaura os badges para os TOTAIS do segmento (estáveis). O
+            // número de linhas visíveis pós-filtro NÃO altera o badge.
+            applyTabBadges(false);
 
             const uf = (
               document.getElementById("routesUf").value || ""
@@ -10057,6 +10298,10 @@
           } catch (e) {
             state.rows = [];
             state.snapshot = null;
+            // Invalida o cache das fatias para que um retry refaça os fetches.
+            try {
+              Object.keys(state.seg).forEach((k) => (state.seg[k].at = 0));
+            } catch (_) {}
             const hint = document.getElementById("routesEmptyHint");
             if (hint)
               hint.innerHTML =
@@ -10134,6 +10379,9 @@
         }
 
         function render() {
+          // Mantém os contadores das abas sincronizados com os TOTAIS do
+          // segmento (não com as linhas visíveis após busca/filtro).
+          applyTabBadges(state.loading);
           const tbody = document.getElementById("routesTableBody");
           const thead = document.getElementById("routesTableHead");
           if (state.tab === "reactivation") {
@@ -10164,13 +10412,9 @@
             const hint = document.getElementById("routesEmptyHint");
             if (hint) hint.innerHTML = describeEmptyHint();
             setEmpty(true);
-            document.getElementById("tabCount" + tabKey()).textContent = "0";
             return;
           }
           setEmpty(false);
-          document.getElementById("tabCount" + tabKey()).textContent = String(
-            visible.length,
-          );
 
           visible.forEach((r) => {
             const tr = document.createElement("tr");
@@ -10819,11 +11063,15 @@
           document
             .getElementById("routesReloadBtn")
             .addEventListener("click", load);
+          // Busca é 100% client-side (render() já aplica clientFilterFront).
+          // NUNCA chamar load() por tecla: evita request por keystroke quando o
+          // cache expira e preserva a seleção do usuário enquanto ele digita.
+          let _searchDebounce = null;
           document
             .getElementById("routesSearch")
             .addEventListener("input", () => {
-              if (state.tab === "active") render();
-              else load();
+              if (_searchDebounce) clearTimeout(_searchDebounce);
+              _searchDebounce = setTimeout(() => render(), 120);
             });
           document.getElementById("routesUf").addEventListener("change", load);
           document

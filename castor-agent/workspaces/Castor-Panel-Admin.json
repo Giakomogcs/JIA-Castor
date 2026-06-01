@@ -1,0 +1,1390 @@
+{
+  "name": "Castor-Panel-Admin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-cache-purge",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3c5fa81d-0b63-42bb-9a0b-94ce64c6334f",
+      "name": "Webhook - Cache Purge",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        42560
+      ],
+      "webhookId": "castor-panel-cache-purge"
+    },
+    {
+      "parameters": {
+        "jsCode": "try { const sd = $getWorkflowStaticData('global'); for (const k of Object.keys(sd)) { if (k.startsWith('snapshot_')) sd[k] = null; if (k.endsWith('_at')) sd[k] = 0; } } catch (e) {}\nreturn [{ json: { ok: true, data: { purged: true }, error: null } }];"
+      },
+      "id": "22ce51a2-e975-40ad-b1c5-0c30230cdb77",
+      "name": "Purge cache",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54816,
+        42560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d22a38cd-4793-48ae-967b-1c22a74517f1",
+      "name": "Respond Purge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55040,
+        42560
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-vendor-offboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ofb00001-0000-0000-0000-000000000010",
+      "name": "Webhook - Vendor Offboard",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        47100
+      ],
+      "webhookId": "castor-panel-vendor-offboard"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nlet targets = body.targets || body.new_user_ids || [];\nif (typeof targets === 'string') { try { targets = JSON.parse(targets); } catch(e) { targets = []; } }\nif (!Array.isArray(targets)) targets = [];\ntargets = targets.map(t => String(t || '').trim()).filter(Boolean);\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  old_user_id: String(body.old_user_id || ''),\n  targets,\n  mode: ['single','round_robin'].includes(body.mode) ? body.mode : 'single',\n  disable_old: body.disable_old === true || body.disable_old === 'true'\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.old_user_id) return [{ json: { ok:false, error:'old_user_id obrigatorio' } }];\nif (!out.targets.length) return [{ json: { ok:false, error:'targets vazio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "ofb00001-0000-0000-0000-000000000020",
+      "name": "Validate Offboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        47100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ofbv1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ofb00001-0000-0000-0000-000000000030",
+      "name": "Offboard valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        47100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_vendor_offboard(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.old_user_id }}'::uuid,\n  ARRAY[{{ ($json.targets || []).map(t => \"'\" + t + \"'::uuid\").join(',') }}]::uuid[],\n  '{{ $json.mode }}',\n  {{ $json.disable_old }}\n) AS row;",
+        "options": {}
+      },
+      "id": "ofb00001-0000-0000-0000-000000000040",
+      "name": "PG: offboard",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        47000
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "ofb00001-0000-0000-0000-000000000050",
+      "name": "Wrap Offboard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        47000
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ofb00001-0000-0000-0000-000000000060",
+      "name": "Respond Offboard OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        47000
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ofb00001-0000-0000-0000-000000000070",
+      "name": "Respond Offboard Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        47244
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-task-assign",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "tas00001-0000-0000-0000-000000000010",
+      "name": "Webhook - Task Assign",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        47600
+      ],
+      "webhookId": "castor-panel-task-assign"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  target_user_id: String(body.target_user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '').trim(),\n  next_contact_at: body.next_contact_at ? String(body.next_contact_at).trim() : null,\n  next_action: body.next_action ? String(body.next_action) : null,\n  notes: body.notes ? String(body.notes) : null,\n  route_id: body.route_id ? String(body.route_id) : null,\n  idempotency_key: body.idempotency_key ? String(body.idempotency_key) : null\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.target_user_id) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (!out.next_contact_at) return [{ json: { ok:false, error:'next_contact_at obrigatorio' } }];\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(out.next_contact_at)) return [{ json: { ok:false, error:'next_contact_at deve ser YYYY-MM-DD' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "tas00001-0000-0000-0000-000000000020",
+      "name": "Validate Task Assign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        47600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "tasv1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "tas00001-0000-0000-0000-000000000030",
+      "name": "Task Assign valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        47600
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_task_assign(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target_user_id }}'::uuid,\n  '{{ $json.cliente_codigo.replace(/'/g, \"''\") }}',\n  '{{ $json.next_contact_at }}'::date,\n  {{ $json.next_action ? \"'\" + $json.next_action.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.notes ? \"'\" + $json.notes.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.route_id ? \"'\" + $json.route_id + \"'::uuid\" : 'NULL' }},\n  {{ $json.idempotency_key ? \"'\" + $json.idempotency_key.replace(/'/g, \"''\") + \"'\" : 'NULL' }}\n) AS row;",
+        "options": {}
+      },
+      "id": "tas00001-0000-0000-0000-000000000040",
+      "name": "PG: task-assign",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        47500
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "tas00001-0000-0000-0000-000000000050",
+      "name": "Wrap Task Assign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        47500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "tas00001-0000-0000-0000-000000000060",
+      "name": "Respond Task Assign OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        47500
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "tas00001-0000-0000-0000-000000000070",
+      "name": "Respond Task Assign Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        47744
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-admin-suggest-pool",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "sgp00001-0000-0000-0000-000000000010",
+      "name": "Webhook - Admin Suggest Pool",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        48100
+      ],
+      "webhookId": "castor-panel-admin-suggest-pool"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst caller = String(body.caller || body.user_id || '').trim();\nconst target = String(body.target_user_id || '').trim();\nconst excl = Array.isArray(body.exclude_codes) ? body.exclude_codes.map(String).filter(Boolean) : [];\nconst lim = Math.max(5, Math.min(parseInt(body.limit || 30, 10) || 30, 100));\nif (!caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!target) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nconst esc = (s) => String(s).replace(/'/g, \"''\");\nconst exclSql = excl.length\n  ? `ARRAY[${excl.map(c => \"'\" + esc(c) + \"'\").join(',')}]::text[]`\n  : 'NULL';\nreturn [{ json: { ok:true, caller, target, exclSql, lim } }];"
+      },
+      "id": "sgp00001-0000-0000-0000-000000000020",
+      "name": "Validate Suggest Pool",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        48100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "sgpv1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sgp00001-0000-0000-0000-000000000030",
+      "name": "Suggest Pool valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        48100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_suggest_pool(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target }}'::uuid,\n  {{ $json.exclSql }},\n  {{ $json.lim }}\n) AS row;",
+        "options": {}
+      },
+      "id": "sgp00001-0000-0000-0000-000000000040",
+      "name": "PG: suggest-pool",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        48000
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "sgp00001-0000-0000-0000-000000000050",
+      "name": "Wrap Suggest Pool",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        48000
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const it = $input.first() && $input.first().json || {};\nconst raw = it.error || it.message || (it.error && it.error.message) || '';\nlet msg = String(raw || '').trim();\nif (!msg) msg = 'Erro inesperado no banco';\n// Detecta causas comuns para mensagem mais util ao admin\nconst low = msg.toLowerCase();\nlet hint = '';\nif (low.includes('function') && low.includes('does not exist')) {\n  hint = ' (migration 020/021 nao aplicada ou cache pgrst desatualizado â€” rode: NOTIFY pgrst, \\'reload schema\\';)';\n} else if (low.includes('apenas admin') || low.includes('admin') && low.includes('autoriz')) {\n  hint = ' (caller nao e admin â€” confira role no metadata do usuario)';\n} else if (low.includes('relation') && low.includes('does not exist')) {\n  hint = ' (tabela/view ausente â€” confira migrations 010/015/019)';\n}\nreturn [{ json: { ok:false, data:null, error: msg + hint } }];"
+      },
+      "id": "sgp00001-0000-0000-0000-000000000045",
+      "name": "Format Suggest Pool DB Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        48180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "sgp00001-0000-0000-0000-000000000060",
+      "name": "Respond Suggest Pool OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        48000
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "sgp00001-0000-0000-0000-000000000070",
+      "name": "Respond Suggest Pool Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        48244
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-card-reassign",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "crs00001-0000-0000-0000-000000000010",
+      "name": "Webhook - Card Reassign",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        49000
+      ],
+      "webhookId": "castor-panel-card-reassign"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.caller_id || body.user_id || ''),\n  route_id: String(body.route_id || ''),\n  cliente_codigo: String(body.cliente_codigo || ''),\n  new_user_id: String(body.new_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (!out.new_user_id) return [{ json: { ok:false, error:'new_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "crs00001-0000-0000-0000-000000000020",
+      "name": "Validate Card Reassign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        49000
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "crs1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "crs00001-0000-0000-0000-000000000030",
+      "name": "Card Reassign valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        49000
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_card_reassign(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  '{{ $json.cliente_codigo }}',\n  '{{ $json.new_user_id }}'::uuid\n) AS row;",
+        "options": {}
+      },
+      "id": "crs00001-0000-0000-0000-000000000040",
+      "name": "PG: card reassign",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        48900
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "crs00001-0000-0000-0000-000000000050",
+      "name": "Wrap Card Reassign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        48900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "crs00001-0000-0000-0000-000000000060",
+      "name": "Respond Card Reassign OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        48900
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "crs00001-0000-0000-0000-000000000070",
+      "name": "Respond Card Reassign Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        49144
+      ]
+    },
+    {
+      "id": "24ba8815-91df-48e6-a14c-1675c4b681b7",
+      "name": "Webhook - admin-followup-clear",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54640,
+        47200
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-admin-followup-clear",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "ea7c0282-d99d-48fe-ab89-fff9571aa309"
+    },
+    {
+      "id": "35f19686-e4b2-422d-84d3-834408dd3152",
+      "name": "Validate admin-followup-clear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54864,
+        47200
+      ],
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  target_user_id: String(body.target_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.target_user_id) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      }
+    },
+    {
+      "id": "55123a12-d68d-4cb8-8378-e72353d57c29",
+      "name": "admin-followup-clear valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55088,
+        47200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "admin-fov1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "97fe2db1-6169-428c-b779-5622e17a8146",
+      "name": "PG: admin-followup-clear",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55312,
+        47040
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_followup_clear_by_user(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target_user_id }}'::uuid\n) AS row;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "id": "6ae6ed61-557d-41b9-a1a6-7e55580a2df8",
+      "name": "Wrap admin-followup-clear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55536,
+        47040
+      ],
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      }
+    },
+    {
+      "id": "ef878d5f-56c8-43ea-b4b8-f50ba2dd4869",
+      "name": "Respond admin-followup-clear OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55760,
+        47040
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "213ed355-1faa-4667-bd9e-c0aa4b4a471f",
+      "name": "Respond admin-followup-clear Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55296,
+        47344
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "1d5ebde9-54d0-45c5-be4d-20e960a1a945",
+      "name": "Webhook - admin-followup-transfer",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54640,
+        47728
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-admin-followup-transfer",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "71e64c6e-8456-4074-82fe-100ea684c36d"
+    },
+    {
+      "id": "0cbd7c2f-5930-489a-92fb-3ddf32ed102d",
+      "name": "Validate admin-followup-transfer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54864,
+        47728
+      ],
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  target_user_id: String(body.target_user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || ''),\n  new_user_id: String(body.new_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.target_user_id) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (!out.new_user_id) return [{ json: { ok:false, error:'new_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      }
+    },
+    {
+      "id": "c66936ab-2a1e-4dea-a261-955bb56c6aaf",
+      "name": "admin-followup-transfer valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55088,
+        47728
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "admin-fov1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "5c9de113-8ca4-41dd-bcaa-15db6fb2d9fd",
+      "name": "PG: admin-followup-transfer",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55312,
+        47568
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_followup_transfer(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target_user_id }}'::uuid,\n  '{{ $json.cliente_codigo }}'::text,\n  '{{ $json.new_user_id }}'::uuid\n) AS row;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "id": "3339cda6-110b-412d-a32e-49d86ffe0ea3",
+      "name": "Wrap admin-followup-transfer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55536,
+        47568
+      ],
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      }
+    },
+    {
+      "id": "75ab58c1-6e67-42ab-ab1d-f0a54076b1ec",
+      "name": "Respond admin-followup-transfer OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55760,
+        47568
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "4d34551e-59e4-41d7-9cfc-3e8d1a827c42",
+      "name": "Respond admin-followup-transfer Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55296,
+        47872
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Castor Panel API — Admin / Gestão\n\nPool de sugestões, follow-up clear/transfer, reatribuição de card, atribuição de task, offboarding de vendedor e purga de cache.\n\nGerado a partir de Castor-Panel-API (split por domínio). Paths inalterados.",
+        "height": 220,
+        "width": 420,
+        "color": 6
+      },
+      "id": "sticky-castor-panel-admin",
+      "name": "Sticky — Castor-Panel-Admin",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        54112,
+        42560
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Cache Purge": {
+      "main": [
+        [
+          {
+            "node": "Purge cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Purge cache": {
+      "main": [
+        [
+          {
+            "node": "Respond Purge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Card Reassign": {
+      "main": [
+        [
+          {
+            "node": "Validate Card Reassign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Card Reassign": {
+      "main": [
+        [
+          {
+            "node": "Card Reassign valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Card Reassign valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: card reassign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Card Reassign Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: card reassign": {
+      "main": [
+        [
+          {
+            "node": "Wrap Card Reassign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Card Reassign": {
+      "main": [
+        [
+          {
+            "node": "Respond Card Reassign OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Vendor Offboard": {
+      "main": [
+        [
+          {
+            "node": "Validate Offboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Offboard": {
+      "main": [
+        [
+          {
+            "node": "Offboard valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offboard valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: offboard",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Offboard Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: offboard": {
+      "main": [
+        [
+          {
+            "node": "Wrap Offboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Offboard": {
+      "main": [
+        [
+          {
+            "node": "Respond Offboard OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Task Assign": {
+      "main": [
+        [
+          {
+            "node": "Validate Task Assign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Task Assign": {
+      "main": [
+        [
+          {
+            "node": "Task Assign valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Assign valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: task-assign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Task Assign Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: task-assign": {
+      "main": [
+        [
+          {
+            "node": "Wrap Task Assign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Task Assign": {
+      "main": [
+        [
+          {
+            "node": "Respond Task Assign OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Admin Suggest Pool": {
+      "main": [
+        [
+          {
+            "node": "Validate Suggest Pool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Suggest Pool": {
+      "main": [
+        [
+          {
+            "node": "Suggest Pool valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggest Pool valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: suggest-pool",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Suggest Pool Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: suggest-pool": {
+      "main": [
+        [
+          {
+            "node": "Wrap Suggest Pool",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Suggest Pool DB Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Suggest Pool": {
+      "main": [
+        [
+          {
+            "node": "Respond Suggest Pool OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Suggest Pool DB Error": {
+      "main": [
+        [
+          {
+            "node": "Respond Suggest Pool Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - admin-followup-clear": {
+      "main": [
+        [
+          {
+            "node": "Validate admin-followup-clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate admin-followup-clear": {
+      "main": [
+        [
+          {
+            "node": "admin-followup-clear valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "admin-followup-clear valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: admin-followup-clear",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond admin-followup-clear Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: admin-followup-clear": {
+      "main": [
+        [
+          {
+            "node": "Wrap admin-followup-clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap admin-followup-clear": {
+      "main": [
+        [
+          {
+            "node": "Respond admin-followup-clear OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - admin-followup-transfer": {
+      "main": [
+        [
+          {
+            "node": "Validate admin-followup-transfer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate admin-followup-transfer": {
+      "main": [
+        [
+          {
+            "node": "admin-followup-transfer valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "admin-followup-transfer valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: admin-followup-transfer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond admin-followup-transfer Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: admin-followup-transfer": {
+      "main": [
+        [
+          {
+            "node": "Wrap admin-followup-transfer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap admin-followup-transfer": {
+      "main": [
+        [
+          {
+            "node": "Respond admin-followup-transfer OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "03d32a206f2d8840fce482e6c587726f18775bd9177e9401c00ca76d3086ad41"
+  }
+}

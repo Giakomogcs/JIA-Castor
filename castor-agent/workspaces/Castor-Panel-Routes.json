@@ -1,0 +1,2009 @@
+{
+  "name": "Castor-Panel-Routes",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cc1fdce5-b229-4021-a2cd-2e45d6a4f486",
+      "name": "Webhook - Route",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        42256
+      ],
+      "webhookId": "castor-panel-route"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst stops = Array.isArray(body.stops) ? body.stops : [];\nconst clean = stops.map(s => ({ code: String(s.cliente_codigo || s.code || '').trim(), lat: +s.lat, lng: +s.lng, name: String(s.name || '') })).filter(s => s.code && Number.isFinite(s.lat) && Number.isFinite(s.lng));\nif (!clean.length) return [{ json: { ok: false, error: 'stops vazio ou sem coordenadas validas' } }];\nconst origin_lat = Number.isFinite(+body.origin_lat) ? +body.origin_lat : -23.6884;\nconst origin_lng = Number.isFinite(+body.origin_lng) ? +body.origin_lng : -46.6178;\nconst source = ['reactivation','prospect','mixed'].includes(body.source) ? body.source : 'mixed';\nconst user_id = String(body.user_id || '');\nfunction km(lat1,lng1,lat2,lng2){const r=(d)=>d*Math.PI/180;const dlat=r(lat2-lat1)/2,dlng=r(lng2-lng1)/2;const a=Math.sin(dlat)*Math.sin(dlat)+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dlng)*Math.sin(dlng);return 6371*2*Math.asin(Math.sqrt(a));}\nconst remaining = clean.slice();\nlet curLat = origin_lat, curLng = origin_lng, total = 0;\nconst ordered = [];\nwhile (remaining.length) {\n  let best = -1, bestD = Infinity;\n  for (let i = 0; i < remaining.length; i++) {\n    const d = km(curLat, curLng, remaining[i].lat, remaining[i].lng);\n    if (d < bestD) { bestD = d; best = i; }\n  }\n  const nxt = remaining.splice(best, 1)[0];\n  total += bestD;\n  ordered.push({ seq: ordered.length + 1, cliente_codigo: nxt.code, name: nxt.name, lat: nxt.lat, lng: nxt.lng, leg_km: Math.round(bestD * 10)/10, cum_km: Math.round(total * 10)/10 });\n  curLat = nxt.lat; curLng = nxt.lng;\n}\nconst origin_str = origin_lat + ',' + origin_lng;\nconst wp = ordered.slice(0, -1).map(s => s.lat + ',' + s.lng).join('|');\nconst dest = ordered[ordered.length - 1];\nconst maps_url = 'https://www.google.com/maps/dir/?api=1&origin=' + origin_str + (wp ? '&waypoints=' + encodeURIComponent(wp) : '') + '&destination=' + dest.lat + ',' + dest.lng;\nreturn [{ json: { ok: true, user_id, source, total_km: Math.round(total * 10)/10, stops: ordered, maps_url } }];"
+      },
+      "id": "f5bbe734-ed95-45a4-b97d-34cc4e9d80c6",
+      "name": "Order Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54816,
+        42256
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c090rt1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "910bb685-7d77-4ff6-94e0-684eb34df944",
+      "name": "Route valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55040,
+        42256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO castor_route_log(vendedor_user_id, client_codes, source, total_km)\nVALUES (\n  NULLIF('{{ $json.user_id }}','')::uuid,\n  ARRAY[{{ $json.stops.map(s => \"'\" + String(s.cliente_codigo).replace(/'/g, \"''\") + \"'\").join(',') }}]::text[],\n  '{{ $json.source }}',\n  {{ $json.total_km }}\n) RETURNING id;",
+        "options": {}
+      },
+      "id": "015061a9-752c-419e-b655-e332f4c9d5bd",
+      "name": "Log Route",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55248,
+        42176
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $('Order Route').first().json;\nreturn [{ json: { ok: true, data: { stops: r.stops, total_km: r.total_km, maps_url: r.maps_url }, error: null } }];"
+      },
+      "id": "6090312b-610e-4839-9207-71fbdc1104c1",
+      "name": "Wrap Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55472,
+        42176
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "40e86616-3957-403b-8380-d9a33d21e276",
+      "name": "Respond Route OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55696,
+        42176
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, data: null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6e2a81ad-0dc4-4e1b-996e-3bb4e5a5665e",
+      "name": "Respond Route Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55248,
+        42400
+      ]
+    },
+    {
+      "parameters": {
+        "path": "castor-panel-routes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8aa42cd8-bca6-4cb6-b029-ae147bfddc52",
+      "name": "Webhook - Routes List",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        42864
+      ],
+      "webhookId": "castor-panel-routes"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT jsonb_agg(to_jsonb(r.*) ORDER BY r.created_at DESC) AS rows FROM castor_route_list(\n  NULLIF('{{ $json.query.userId || '' }}','')::uuid,\n  {{ ($json.query && $json.query.openOnly === 'true') ? 'TRUE' : 'FALSE' }},\n  {{ +(($json.query && $json.query.limit) || 50) }}\n) r;",
+        "options": {}
+      },
+      "id": "098922a3-a93e-407f-933c-f74b3f0a4ce3",
+      "name": "PG: route list",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        54816,
+        42864
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:true, data:{ routes: ($json.rows || []) }, error:null } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "390263e9-e780-45b0-8fe0-51c594df8f4d",
+      "name": "Respond Routes List",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55040,
+        42864
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-save",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "bc09772e-45a8-423c-be73-35f228924779",
+      "name": "Webhook - Route Save",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        43088
+      ],
+      "webhookId": "castor-panel-route-save"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  name: String(body.name || '').trim(),\n  source: ['ai_auto','manual','mixed','reactivation','prospect'].includes(body.source) ? body.source : 'manual',\n  stops: Array.isArray(body.stops) ? body.stops : [],\n  total_km: Number.isFinite(+body.total_km) ? +body.total_km : null,\n  origin_lat: Number.isFinite(+body.origin_lat) ? +body.origin_lat : null,\n  origin_lng: Number.isFinite(+body.origin_lng) ? +body.origin_lng : null,\n  ai_rationale: body.ai_rationale ? String(body.ai_rationale) : null,\n  maps_url: body.maps_url ? String(body.maps_url) : null\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.stops.length) return [{ json: { ok:false, error:'stops vazio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "29c39b2f-b524-4d57-b8af-cc2c09c36cfe",
+      "name": "Validate Save",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54816,
+        43088
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rsv1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "91edb676-3d31-4089-bdc4-6355f829f0af",
+      "name": "Save valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55040,
+        43088
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_route_save_unified(\n  '{{ $json.user_id }}'::uuid,\n  {{ $json.name ? \"'\" + $json.name.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  '{{ $json.source }}',\n  '{{ JSON.stringify($json.stops).replace(/'/g, \"''\") }}'::jsonb,\n  {{ $json.total_km != null ? $json.total_km : 'NULL' }},\n  {{ $json.origin_lat != null ? $json.origin_lat : 'NULL' }}::double precision,\n  {{ $json.origin_lng != null ? $json.origin_lng : 'NULL' }}::double precision,\n  {{ $json.ai_rationale ? \"'\" + $json.ai_rationale.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.maps_url ? \"'\" + $json.maps_url.replace(/'/g, \"''\") + \"'\" : 'NULL' }}\n) AS result;",
+        "options": {}
+      },
+      "id": "b7b19c7f-937f-4068-a529-3e91ead01eb2",
+      "name": "PG: save route",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55248,
+        43008
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:true, data: ($json.result || { route_id: $json.route_id }), error:null } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a37b33e8-6988-4ba8-aa97-06e9f49aef36",
+      "name": "Respond Save OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55472,
+        43008
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "bf029477-489f-4c89-a357-a148043c820e",
+      "name": "Respond Save Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55248,
+        43216
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-update",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "423e2cd6-5634-4239-8935-51d2fc240add",
+      "name": "Webhook - Route Update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        43440
+      ],
+      "webhookId": "b99d0414-7156-45a8-b74c-1642bfc517fc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst ALLOWED_OUTCOMES = ['visitou','sem_contato','convertido','voltar_depois','negativo','aguardando_resposta','pedido_em_negociacao','nao_existe_mais','nao_interessado_permanente'];\nconst ALLOWED_TYPES = ['visita_presencial','telefone','whatsapp','email','reuniao_online','outro'];\nconst out = {\n  user_id: String(body.user_id || ''),\n  route_id: String(body.route_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '').trim(),\n  outcome: body.outcome ? String(body.outcome).trim() : null,\n  notes: body.notes ? String(body.notes) : null,\n  custom_days: (body.custom_days !== undefined && body.custom_days !== null && body.custom_days !== '') ? +body.custom_days : null,\n  interaction_type: body.interaction_type ? String(body.interaction_type).trim() : null,\n  next_contact_at: body.next_contact_at ? String(body.next_contact_at).trim() : null,\n  next_action: body.next_action ? String(body.next_action) : null\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (out.outcome !== null && !ALLOWED_OUTCOMES.includes(out.outcome)) return [{ json: { ok:false, error:'outcome invalido' } }];\nif (out.interaction_type !== null && !ALLOWED_TYPES.includes(out.interaction_type)) return [{ json: { ok:false, error:'interaction_type invalido' } }];\nif (out.next_contact_at !== null && !/^\\d{4}-\\d{2}-\\d{2}$/.test(out.next_contact_at)) return [{ json: { ok:false, error:'next_contact_at deve ser YYYY-MM-DD' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "b6316219-4378-4fe7-9fa1-d626034b78d3",
+      "name": "Validate Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54816,
+        43440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rup1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c64f9e2e-6736-4d31-94ab-21ecdfb6e16a",
+      "name": "Update valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55040,
+        43440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT to_jsonb(castor_route_update_stop(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  '{{ $json.cliente_codigo.replace(/'/g, \"''\") }}',\n  {{ $json.outcome ? \"'\" + $json.outcome + \"'\" : 'NULL' }},\n  {{ $json.notes ? \"'\" + $json.notes.replace(/'/g, \"''\") + \"'\" : 'NULL' }},\n  {{ $json.custom_days === null ? 'NULL' : $json.custom_days }},\n  {{ $json.interaction_type ? \"'\" + $json.interaction_type + \"'\" : 'NULL' }},\n  {{ $json.next_contact_at ? \"'\" + $json.next_contact_at + \"'::date\" : 'NULL' }},\n  {{ $json.next_action ? \"'\" + $json.next_action.replace(/'/g, \"''\") + \"'\" : 'NULL' }}\n)) AS row;",
+        "options": {}
+      },
+      "id": "252de1cb-124c-439c-91c2-aaeb63114d31",
+      "name": "PG: update stop",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55248,
+        43360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try { const sd = $getWorkflowStaticData('global'); for (const k of Object.keys(sd)) { if (k.startsWith('snapshot_')) sd[k] = null; if (k.endsWith('_at')) sd[k] = 0; } } catch (e) {}\nconst r = $input.first().json && ($input.first().json.row || $input.first().json);\nreturn [{ json: { ok:true, data:r, error:null } }];"
+      },
+      "id": "55c761f6-8fbc-4130-b02e-aa6175184fa3",
+      "name": "Wrap Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55472,
+        43360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "501b3d1a-28b9-4908-b5cd-e79f8a980050",
+      "name": "Respond Update OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55696,
+        43360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5d0cde1b-7f1d-4243-bad7-b04555d224e2",
+      "name": "Respond Update Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55248,
+        43584
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-ai-route",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "684e1a2f-caa9-4bdc-9011-22b24d8161b5",
+      "name": "Webhook - AI Route",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54592,
+        43808
+      ],
+      "webhookId": "castor-panel-ai-route"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nlet exclude_codes = [];\ntry {\n  const raw = body.exclude_codes;\n  const arr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw || '[]') : []);\n  exclude_codes = (arr || []).map(c => String(c).trim()).filter(Boolean).slice(0, 200);\n} catch (e) { exclude_codes = []; }\nconst out = {\n  user_id: String(body.user_id || ''),\n  mode: ['reactivation','mixed'].includes(body.mode) ? body.mode : 'reactivation',\n  uf: body.uf ? String(body.uf).toUpperCase().slice(0,2) : null,\n  cidade: body.cidade ? String(body.cidade) : null,\n  max_stops: (Number.isFinite(+body.max_stops) && +body.max_stops > 0) ? Math.min(20, +body.max_stops) : 8,\n  origin_lat: Number.isFinite(+body.origin_lat) ? +body.origin_lat : null,\n  origin_lng: Number.isFinite(+body.origin_lng) ? +body.origin_lng : null,\n  name: body.name ? String(body.name) : null,\n  exclude_codes\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "9c963ab5-1b2d-4383-b45d-2c9f5cba90b6",
+      "name": "Validate AI Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54816,
+        43808
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rai1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e09683f6-fc7a-437c-8810-4402785e369f",
+      "name": "AI Route valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55040,
+        43808
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "NmLPgd9ENl31S31r",
+          "mode": "list",
+          "cachedResultName": "[Castor] Sub-fluxo_ Auto Route Builder"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.user_id }}",
+            "mode": "={{ $json.mode }}",
+            "uf": "={{ $json.uf }}",
+            "cidade": "={{ $json.cidade }}",
+            "max_stops": "={{ $json.max_stops }}",
+            "origin_lat": "={{ $json.origin_lat }}",
+            "origin_lng": "={{ $json.origin_lng }}",
+            "name": "={{ $json.name }}",
+            "exclude_codes": "={{ $json.exclude_codes }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "uf",
+              "displayName": "uf",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "cidade",
+              "displayName": "cidade",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "max_stops",
+              "displayName": "max_stops",
+              "required": false,
+              "type": "number",
+              "display": true
+            },
+            {
+              "id": "origin_lat",
+              "displayName": "origin_lat",
+              "required": false,
+              "type": "number",
+              "display": true
+            },
+            {
+              "id": "origin_lng",
+              "displayName": "origin_lng",
+              "required": false,
+              "type": "number",
+              "display": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "exclude_codes",
+              "displayName": "exclude_codes",
+              "required": false,
+              "type": "array",
+              "display": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "8f23fc9b-8de5-4c04-872c-0b671e4ce95a",
+      "name": "Execute Auto Route Builder",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        55248,
+        43728
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "3139f630-cda7-4847-8ea1-d783b5d3684f",
+      "name": "Respond AI Route OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55488,
+        43728
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "38cb22f2-9777-4808-a170-3bbdfc4805ef",
+      "name": "Respond AI Route Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55248,
+        43952
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-reassign",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5aa52007-2024-447b-8249-58b5700cef88",
+      "name": "Webhook - Route Reassign",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        44480
+      ],
+      "webhookId": "castor-panel-route-reassign"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  route_id: String(body.route_id || ''),\n  new_user_id: String(body.new_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nif (!out.new_user_id) return [{ json: { ok:false, error:'new_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "e320eef7-5ba6-49a5-9760-b7029ba2d7fb",
+      "name": "Validate Reassign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        44480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rrs1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9a531782-8a29-4055-bff7-ef64101e115f",
+      "name": "Reassign valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        44480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_route_reassign(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  '{{ $json.new_user_id }}'::uuid\n) AS row;",
+        "options": {}
+      },
+      "id": "3c2dc003-fb63-44a1-9250-e938f02cf9b5",
+      "name": "PG: reassign",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        44384
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "d9e0f701-bfd6-4765-8c2b-1b4006938aa8",
+      "name": "Wrap Reassign",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        44384
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "909de590-c39c-49a8-b56c-68d80f60f179",
+      "name": "Respond Reassign OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        44384
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2802bed4-0a57-42a6-82df-0432bcdb22d0",
+      "name": "Respond Reassign Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        44624
+      ]
+    },
+    {
+      "parameters": {
+        "path": "castor-panel-route-metrics",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8f4d09da-b123-4715-a20c-863a55ab7b62",
+      "name": "Webhook - Route Metrics",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54576,
+        45056
+      ],
+      "webhookId": "castor-panel-route-metrics"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_route_metrics(\n  NULLIF('{{ $json.query.userId || '' }}','')::uuid,\n  {{ +(($json.query && $json.query.days) || 30) }}\n) AS row;",
+        "options": {}
+      },
+      "id": "977f8620-cbf1-4e9d-a076-da7dc6011f0b",
+      "name": "PG: route metrics",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        54800,
+        45056
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:true, data: ($json.row || {}), error:null } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8c3cdac6-6a64-40ed-a5d4-e86ba563c6e9",
+      "name": "Respond Metrics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55024,
+        45056
+      ]
+    },
+    {
+      "parameters": {
+        "path": "castor-panel-route-detail",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2fc057a8-61d0-4491-bbdc-dff5f8919ebc",
+      "name": "Webhook - Route Detail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54576,
+        45296
+      ],
+      "webhookId": "castor-panel-route-detail"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_route_detail(\n  NULLIF('{{ $json.query.userId || '' }}','')::uuid,\n  NULLIF('{{ $json.query.routeId || '' }}','')::uuid\n) AS row;",
+        "options": {}
+      },
+      "id": "b23b61ec-3908-483c-ab9e-e15e0b5c986a",
+      "name": "PG: route detail",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        54800,
+        45296
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r.route || null, error:null } }];"
+      },
+      "id": "72d00cff-1f22-478b-9a1e-2d4ec8b45171",
+      "name": "Wrap Route Detail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55024,
+        45296
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "bb8932dd-a592-4523-b571-408fc3bd854b",
+      "name": "Respond Route Detail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55232,
+        45296
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-stop-remove",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5d383e57-d340-428a-95aa-29f0a0700d91",
+      "name": "Webhook - Stop Remove",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54640,
+        46368
+      ],
+      "webhookId": "castor-panel-route-stop-remove"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst out = {\n  user_id: String(body.user_id || ''),\n  route_id: String(body.route_id || ''),\n  cliente_codigo: String(body.cliente_codigo || '')\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "ecb5f4e9-4ce7-4f2d-a21e-5a8cbf517213",
+      "name": "Validate Stop Remove",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54864,
+        46368
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "srm1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "34b81968-01b4-419f-b216-a5b6358a672a",
+      "name": "Stop Remove valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55088,
+        46368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_route_stop_remove(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  '{{ $json.cliente_codigo }}'\n) AS row;",
+        "options": {}
+      },
+      "id": "b5c9347c-644e-41b7-8e7c-34fdca918974",
+      "name": "PG: stop remove",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55296,
+        46176
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "e18242e2-cc0f-41a1-a65c-56164b222826",
+      "name": "Wrap Stop Remove",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55520,
+        46176
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e90ec325-6b18-4a4f-93ab-0c4742017f3e",
+      "name": "Respond Stop Remove OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55744,
+        46176
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "0dae3cbe-30fe-4141-a26c-e52463f9b678",
+      "name": "Respond Stop Remove Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55296,
+        46624
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-delete",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3bc8e17c-ae5f-4dfe-8e2f-a3994edb60d4",
+      "name": "Webhook - Route Delete",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54688,
+        46896
+      ],
+      "webhookId": "castor-panel-route-delete"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst MODES = ['route_only','route_followups','route_history'];\nlet mode = String(body.mode || 'route_followups');\nif (!MODES.includes(mode)) mode = 'route_followups';\nconst out = {\n  user_id: String(body.user_id || ''),\n  route_id: String(body.route_id || ''),\n  mode\n};\nif (!out.user_id) return [{ json: { ok:false, error:'user_id obrigatorio' } }];\nif (!out.route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
+      },
+      "id": "aa023c6e-1a93-4ce5-97b5-d5b2f5311d7d",
+      "name": "Validate Route Delete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54912,
+        46896
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rd1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "756f0b13-5c11-4ce8-8172-c3af557afa3b",
+      "name": "Route Delete valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55136,
+        46896
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_route_delete(\n  '{{ $json.user_id }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  '{{ $json.mode }}'::text\n) AS row;",
+        "options": {}
+      },
+      "id": "a3cdc006-0bfb-4ae3-8043-da7c50710094",
+      "name": "PG: route delete",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55344,
+        46816
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "a52c2f27-d013-40f6-b7a5-309d8b9ed34d",
+      "name": "Wrap Route Delete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55568,
+        46816
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "433d12fd-3ab8-4148-8512-8cdaa86a9e95",
+      "name": "Respond Route Delete OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55792,
+        46816
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "2455af6a-8fce-40c3-afec-c019e0b17390",
+      "name": "Respond Route Delete Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55344,
+        47040
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "castor-panel-route-move",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rmv00001-0000-0000-0000-000000000010",
+      "name": "Webhook - Route Move",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        54656,
+        49520
+      ],
+      "webhookId": "castor-panel-route-move"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst caller = String(body.caller || body.caller_id || body.user_id || '');\nconst route_id = String(body.route_id || '');\n// new_user_id pode ser null/'' = desatribuir\nlet new_user_id = body.new_user_id;\nif (new_user_id === undefined || new_user_id === null || String(new_user_id).trim() === '' || String(new_user_id).toLowerCase() === 'null') {\n  new_user_id = null;\n} else {\n  new_user_id = String(new_user_id);\n}\nif (!caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!route_id) return [{ json: { ok:false, error:'route_id obrigatorio' } }];\nreturn [{ json: { ok:true, caller, route_id, new_user_id, new_user_sql: (new_user_id === null ? 'NULL' : (\"'\"+new_user_id+\"'::uuid\")) } }];"
+      },
+      "id": "rmv00001-0000-0000-0000-000000000020",
+      "name": "Validate Route Move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        54880,
+        49520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rmv1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rmv00001-0000-0000-0000-000000000030",
+      "name": "Route Move valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        55104,
+        49520
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT castor_admin_route_move(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.route_id }}'::uuid,\n  {{ $json.new_user_sql }}\n) AS row;",
+        "options": {}
+      },
+      "id": "rmv00001-0000-0000-0000-000000000040",
+      "name": "PG: route move",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        55440,
+        49420
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "jFjeYH6Nt3aRNkoM",
+          "name": "Supabase_database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
+      },
+      "id": "rmv00001-0000-0000-0000-000000000050",
+      "name": "Wrap Route Move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        55664,
+        49420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "rmv00001-0000-0000-0000-000000000060",
+      "name": "Respond Route Move OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55888,
+        49420
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "rmv00001-0000-0000-0000-000000000070",
+      "name": "Respond Route Move Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        55312,
+        49664
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Castor Panel API — Roteirização\n\nEndpoints de rotas: criar, listar, detalhar, métricas, salvar, atualizar, mover, reatribuir, remover parada, deletar e roteiro por IA.\n\nGerado a partir de Castor-Panel-API (split por domínio). Paths inalterados.",
+        "height": 220,
+        "width": 420,
+        "color": 6
+      },
+      "id": "sticky-castor-panel-routes",
+      "name": "Sticky — Castor-Panel-Routes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        54096,
+        42176
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Route": {
+      "main": [
+        [
+          {
+            "node": "Order Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Route": {
+      "main": [
+        [
+          {
+            "node": "Route valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route valid?": {
+      "main": [
+        [
+          {
+            "node": "Log Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Route Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Route": {
+      "main": [
+        [
+          {
+            "node": "Wrap Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Route": {
+      "main": [
+        [
+          {
+            "node": "Respond Route OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Routes List": {
+      "main": [
+        [
+          {
+            "node": "PG: route list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: route list": {
+      "main": [
+        [
+          {
+            "node": "Respond Routes List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Save": {
+      "main": [
+        [
+          {
+            "node": "Validate Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Save": {
+      "main": [
+        [
+          {
+            "node": "Save valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: save route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Save Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: save route": {
+      "main": [
+        [
+          {
+            "node": "Respond Save OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Update": {
+      "main": [
+        [
+          {
+            "node": "Validate Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Update": {
+      "main": [
+        [
+          {
+            "node": "Update valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: update stop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Update Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: update stop": {
+      "main": [
+        [
+          {
+            "node": "Wrap Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Update": {
+      "main": [
+        [
+          {
+            "node": "Respond Update OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - AI Route": {
+      "main": [
+        [
+          {
+            "node": "Validate AI Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI Route": {
+      "main": [
+        [
+          {
+            "node": "AI Route valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Route valid?": {
+      "main": [
+        [
+          {
+            "node": "Execute Auto Route Builder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond AI Route Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Auto Route Builder": {
+      "main": [
+        [
+          {
+            "node": "Respond AI Route OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Reassign": {
+      "main": [
+        [
+          {
+            "node": "Validate Reassign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Reassign": {
+      "main": [
+        [
+          {
+            "node": "Reassign valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reassign valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: reassign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Reassign Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: reassign": {
+      "main": [
+        [
+          {
+            "node": "Wrap Reassign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Reassign": {
+      "main": [
+        [
+          {
+            "node": "Respond Reassign OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Move": {
+      "main": [
+        [
+          {
+            "node": "Validate Route Move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Route Move": {
+      "main": [
+        [
+          {
+            "node": "Route Move valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Move valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: route move",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Route Move Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: route move": {
+      "main": [
+        [
+          {
+            "node": "Wrap Route Move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Route Move": {
+      "main": [
+        [
+          {
+            "node": "Respond Route Move OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Metrics": {
+      "main": [
+        [
+          {
+            "node": "PG: route metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: route metrics": {
+      "main": [
+        [
+          {
+            "node": "Respond Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Detail": {
+      "main": [
+        [
+          {
+            "node": "PG: route detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: route detail": {
+      "main": [
+        [
+          {
+            "node": "Wrap Route Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Route Detail": {
+      "main": [
+        [
+          {
+            "node": "Respond Route Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Stop Remove": {
+      "main": [
+        [
+          {
+            "node": "Validate Stop Remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Stop Remove": {
+      "main": [
+        [
+          {
+            "node": "Stop Remove valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stop Remove valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: stop remove",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Stop Remove Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: stop remove": {
+      "main": [
+        [
+          {
+            "node": "Wrap Stop Remove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Stop Remove": {
+      "main": [
+        [
+          {
+            "node": "Respond Stop Remove OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Route Delete": {
+      "main": [
+        [
+          {
+            "node": "Validate Route Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Route Delete": {
+      "main": [
+        [
+          {
+            "node": "Route Delete valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Delete valid?": {
+      "main": [
+        [
+          {
+            "node": "PG: route delete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Route Delete Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PG: route delete": {
+      "main": [
+        [
+          {
+            "node": "Wrap Route Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Route Delete": {
+      "main": [
+        [
+          {
+            "node": "Respond Route Delete OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "03d32a206f2d8840fce482e6c587726f18775bd9177e9401c00ca76d3086ad41"
+  }
+}
