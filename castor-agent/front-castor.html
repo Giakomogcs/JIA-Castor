@@ -3409,6 +3409,37 @@
               <div class="sb-section-header">
                 <span class="sb-section-title">
                   <i
+                    data-lucide="briefcase"
+                    style="width: 13px; height: 13px"
+                  ></i>
+                  Carteira
+                  <span class="sb-pill" id="sbPortfolioPill">0</span>
+                </span>
+                <button class="sb-link" id="sbPortfolioOpenBtn">
+                  Ver empresas
+                </button>
+              </div>
+              <div
+                id="sbPortfolioHint"
+                class="sb-empty"
+                style="cursor: pointer"
+              >
+                Clique para ver as empresas da carteira.
+              </div>
+              <button
+                class="sb-link"
+                id="sbRecontatosOpenBtn"
+                style="margin-top: 6px; text-align: left"
+                title="Empresas a recontatar (vencidos + futuros) e roteiro rápido no Maps"
+              >
+                📅 Recontatos &amp; rota rápida
+              </button>
+            </div>
+
+            <div class="sb-section">
+              <div class="sb-section-header">
+                <span class="sb-section-title">
+                  <i
                     data-lucide="calendar-check"
                     style="width: 13px; height: 13px"
                   ></i>
@@ -3811,6 +3842,26 @@
                       <option value="vendedor">Vendedor de Vendas</option>
                       <option value="admin">Administrador</option>
                     </select>
+                    <label class="form-label"
+                      >Vendedor no Protheus (carteira)</label
+                    >
+                    <select
+                      class="login-input"
+                      id="formVendorCode"
+                      style="cursor: pointer"
+                    >
+                      <option value="">— Sem vínculo —</option>
+                    </select>
+                    <div
+                      style="
+                        font-size: 0.72rem;
+                        color: var(--text-secondary);
+                        margin-top: 2px;
+                      "
+                    >
+                      Vincula o login ao código A3 do Protheus. Necessário para o
+                      consultor ver a própria carteira.
+                    </div>
                   </div>
                   <div class="user-form-col">
                     <!-- Estados multi-select -->
@@ -4324,12 +4375,14 @@
             <input
               id="myRouteDateFrom"
               type="date"
+              lang="pt-BR"
               title="Emitido de"
               style="width: 140px"
             />
             <input
               id="myRouteDateTo"
               type="date"
+              lang="pt-BR"
               title="Emitido até"
               style="width: 140px"
             />
@@ -4946,9 +4999,10 @@
           "
         >
           <div>
-            <h3 style="margin: 0">📅 Follow-ups</h3>
+            <h3 style="margin: 0">📅 Recontatos</h3>
             <div style="font-size: 0.8rem; color: var(--text-secondary)">
-              Contatos agendados (vencidos + janela à frente)
+              Empresas a recontatar — vencidos + agendados na janela à frente.
+              Resolva adiantado quando quiser.
             </div>
           </div>
           <button
@@ -4996,9 +5050,141 @@
           />
         </div>
         <div
+          style="
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            padding: 6px 8px;
+            border: 1px dashed var(--border-color, #e5e5e5);
+            border-radius: 6px;
+          "
+        >
+          <label
+            style="
+              font-size: 0.8rem;
+              color: var(--text-secondary);
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              cursor: pointer;
+            "
+          >
+            <input type="checkbox" id="followupsSelectAll" />
+            Selecionar todos
+          </label>
+          <span id="followupsSelCount" style="font-size: 0.78rem; color: var(--text-secondary)"
+            >0 selecionados</span
+          >
+          <span style="flex: 1"></span>
+          <button
+            id="followupsRouteBtn"
+            type="button"
+            disabled
+            title="Monta um roteiro rápido no Google Maps com as empresas selecionadas (não salva)"
+            style="
+              font-size: 12px;
+              padding: 5px 12px;
+              background: #0ea5e9;
+              color: #fff;
+              border: 0;
+              border-radius: 6px;
+              cursor: pointer;
+              opacity: 0.5;
+              font-weight: 600;
+            "
+          >
+            🗺️ Gerar rota no Maps
+          </button>
+        </div>
+        <div id="followupsRouteResult"></div>
+        <div
           id="followupsList"
           style="display: flex; flex-direction: column; gap: 8px"
         ></div>
+      </div>
+    </div>
+
+    <!-- Carteira do vendedor: lista de empresas atribuídas (admin escolhe o vendedor) -->
+    <div id="portfolioModal" class="routes-modal-backdrop">
+      <div
+        class="routes-modal"
+        style="
+          max-width: 920px;
+          width: 96vw;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+          "
+        >
+          <div>
+            <h3 style="margin: 0">💼 Carteira de clientes</h3>
+            <div
+              id="portfolioSubtitle"
+              style="font-size: 0.8rem; color: var(--text-secondary)"
+            >
+              Empresas atribuídas ao vendedor
+            </div>
+          </div>
+          <button
+            id="portfolioCloseBtn"
+            title="Fechar"
+            style="
+              background: transparent;
+              border: 0;
+              font-size: 1.3rem;
+              cursor: pointer;
+              color: var(--text-secondary);
+            "
+          >
+            ×
+          </button>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+          "
+        >
+          <select
+            id="portfolioVendorSelect"
+            style="font-size: 12px; padding: 4px 8px; display: none; min-width: 200px"
+          ></select>
+          <input
+            id="portfolioSearch"
+            type="search"
+            placeholder="Buscar empresa, código ou cidade…"
+            style="flex: 1; min-width: 180px; font-size: 12px; padding: 4px 8px"
+          />
+        </div>
+        <div
+          id="portfolioSummary"
+          style="
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            font-size: 0.78rem;
+          "
+        ></div>
+        <div
+          id="portfolioList"
+          style="display: flex; flex-direction: column; gap: 6px"
+        >
+          <div class="sb-empty">Carregando…</div>
+        </div>
       </div>
     </div>
 
@@ -7385,6 +7571,18 @@
           },
         );
       }
+      // Converte qualquer data (ISO "YYYY-MM-DD", ISO completo ou Date) para
+      // o formato brasileiro dd/mm/aaaa, sem deslocamento de fuso para
+      // strings "date-only" (evita o card mostrar o dia anterior).
+      window.castorDateBR = function (value) {
+        if (!value) return "";
+        const s = String(value);
+        const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+        const d = new Date(s);
+        if (isNaN(d.getTime())) return s;
+        return d.toLocaleDateString("pt-BR");
+      };
       function formatDate(dateString) {
         const date = new Date(dateString);
         const now = new Date();
@@ -9014,6 +9212,30 @@
         UPDATE: CASTOR_PREFIX + "admin_update_user",
         DELETE: CASTOR_PREFIX + "admin_delete_user",
         CONFIRM: CASTOR_PREFIX + "admin_confirm_user",
+        VENDOR_DIRECTORY: CASTOR_PREFIX + "vendor_directory",
+        SET_VENDOR: CASTOR_PREFIX + "admin_set_vendor_code",
+      };
+
+      // Diretório de vendedores reais do Protheus (a3_cod + nome + nº clientes).
+      // Cacheado por sessão; usado pelo editor de usuário e pelo modal da carteira.
+      window.castorLoadVendorDirectory = async function (force) {
+        if (
+          !force &&
+          Array.isArray(window.__castorVendorDir) &&
+          window.__castorVendorDir.length
+        )
+          return window.__castorVendorDir;
+        try {
+          const { data, error } = await window.supabaseClient.rpc(
+            USER_RPC.VENDOR_DIRECTORY,
+            { p_q: null },
+          );
+          if (error) throw error;
+          window.__castorVendorDir = Array.isArray(data) ? data : [];
+        } catch (e) {
+          window.__castorVendorDir = [];
+        }
+        return window.__castorVendorDir;
       };
 
       const IBGE_API = {
@@ -10345,7 +10567,7 @@
             const label = isInProgress ? "Em andamento" : "Em aberto";
             const rid = String(hit.route_id || "").slice(-4);
             const next = hit.next_contact_at
-              ? " · 📅 " + String(hit.next_contact_at).slice(0, 10)
+              ? " · 📅 " + window.castorDateBR(hit.next_contact_at)
               : "";
             const tip =
               "Este cliente já está no seu kanban (roteiro R#" +
@@ -11174,7 +11396,10 @@
         }
         function fmtDate(s) {
           try {
-            return new Date(s).toLocaleDateString("pt-BR");
+            const v = /^\d{4}-\d{2}-\d{2}$/.test(String(s))
+              ? s + "T00:00:00"
+              : s;
+            return new Date(v).toLocaleDateString("pt-BR");
           } catch (e) {
             return "";
           }
@@ -11750,7 +11975,7 @@
                 <div style="font-weight:600;font-size:0.82rem;line-height:1.2;padding-right:78px">${idx + 1}. ${nm}</div>
                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">cod ${esc(s.cliente_codigo)} · ${mun}</div>
                 ${oc ? `<div style="font-size:11px;color:${col.color};margin-top:4px;font-weight:600">${esc(oc)}${tp ? " · " + esc(tp) : ""}</div>` : ""}
-                ${next ? `<div style="font-size:11px;color:${overdue ? "#dc2626" : "#7c3aed"};margin-top:2px;font-weight:600">📅 ${next}${overdue ? " (vencido)" : ""}</div>` : ""}
+                ${next ? `<div style="font-size:11px;color:${overdue ? "#dc2626" : "#7c3aed"};margin-top:2px;font-weight:600">📅 ${window.castorDateBR(next)}${overdue ? " (vencido)" : ""}</div>` : ""}
                 ${notes}
               </div>`;
                 })
@@ -12142,7 +12367,7 @@
                             <span style="color:var(--text-secondary)">${esc(when)}</span>
                           </div>
                           ${it.notes ? `<div style="font-style:italic;color:var(--text-secondary);margin-top:2px">"${esc(it.notes)}"</div>` : ""}
-                          ${it.next_contact_at ? `<div style="color:#7c3aed;margin-top:2px">📅 próx: ${esc(String(it.next_contact_at).slice(0, 10))}${it.next_action ? " — " + esc(it.next_action) : ""}</div>` : ""}
+                          ${it.next_contact_at ? `<div style="color:#7c3aed;margin-top:2px">📅 próx: ${esc(window.castorDateBR(it.next_contact_at))}${it.next_action ? " — " + esc(it.next_action) : ""}</div>` : ""}
                         </div>`;
                       })
                       .join("") +
@@ -12591,6 +12816,9 @@
           selectionMode: false, // só permite selecionar quando o usuário ativa o modo
         };
 
+        // Card sendo arrastado entre colunas do kanban: {route, code, fromCol}.
+        let _dragData = null;
+
         const KAN_COLS = [
           {
             key: "todo",
@@ -12684,6 +12912,45 @@
           for (const c of KAN_COLS) if (c.match(s)) return c.key;
           return null;
         }
+
+        // ----------------------------------------------------------------
+        // Mapa COLUNA-DESTINO → resultado padrão ao ARRASTAR um card.
+        // É o inverso (e mais legível) da regra `KAN_COLS[].match`:
+        //   "soltei o card NESTA coluna ⇒ o resultado mais provável é ESTE".
+        // O modal abre pré-preenchido com esses valores; o vendedor confirma
+        // ou ajusta. `next_days` força a data de retorno (em dias a partir de
+        // hoje); quando ausente usa CASTOR_OUTCOME_DEFAULT_DAYS do outcome.
+        // ----------------------------------------------------------------
+        const KAN_DROP_DEFAULTS = {
+          // A fazer = volta a pendente para HOJE (precisa contatar de novo).
+          todo: {
+            interaction_type: "visita_presencial",
+            outcome: "voltar_depois",
+            next_days: 0,
+          },
+          // Em andamento = conversa rolando, retorno marcado para frente.
+          progress: {
+            interaction_type: "telefone",
+            outcome: "aguardando_resposta",
+            next_days: 5,
+          },
+          // Travados = tentou e não falou com ninguém.
+          stuck: {
+            interaction_type: "telefone",
+            outcome: "sem_contato",
+          },
+          // Fechados ✓ = visita feita / negócio resolvido.
+          done: {
+            interaction_type: "visita_presencial",
+            outcome: "visitou",
+            next_days: 20,
+          },
+          // Encerrados 🔒 = relacionamento finalizado (não retorna ao roteiro).
+          closed: {
+            interaction_type: "visita_presencial",
+            outcome: "nao_interessado_permanente",
+          },
+        };
 
         function currentUserCtx() {
           try {
@@ -13118,8 +13385,8 @@
                   const isSel = state.selected.has(key);
                   // Admin sempre em modo seleção (checkbox visível para bulk-reassign).
                   const selMode = !!state.selectionMode || _isAdminView;
-                  return `<div class="myr-card" data-code="${esc(s.cliente_codigo)}" data-route="${esc(s._route_id)}"
-                style="background:#fff;border:1px solid var(--border-color,#e5e5e5);border-left:3px solid ${col.color};border-radius:6px;padding:8px;${_isAdminView ? "cursor:default;" : "cursor:pointer;"}${isOpen ? "box-shadow:0 0 0 2px " + col.color + "33;" : ""}${selMode && isSel ? "background:#faf5ff;" : ""}" title="${_isAdminView ? "Use os botões “ℹ Detalhes” ou de atribuição." : "Clique para registrar interação"}">
+                  return `<div class="myr-card" data-code="${esc(s.cliente_codigo)}" data-route="${esc(s._route_id)}" data-curcol="${col.key}" draggable="${!_isAdminView && !state.selectionMode ? "true" : "false"}"
+                style="background:#fff;border:1px solid var(--border-color,#e5e5e5);border-left:3px solid ${col.color};border-radius:6px;padding:8px;${_isAdminView ? "cursor:default;" : "cursor:grab;"}${isOpen ? "box-shadow:0 0 0 2px " + col.color + "33;" : ""}${selMode && isSel ? "background:#faf5ff;" : ""}" title="${_isAdminView ? "Use os botões “ℹ Detalhes” ou de atribuição." : "Clique para registrar interação — ou arraste para outra coluna"}">
                 <div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start">
                   <label style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;cursor:pointer" onclick="event.stopPropagation()">
                     ${selMode ? `<input type="checkbox" class="myr-sel" ${isSel ? "checked" : ""} style="margin:0;cursor:pointer" />` : ""}
@@ -13135,7 +13402,7 @@
                 <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">cod ${esc(s.cliente_codigo)}${mun ? " · " + mun : ""}${uf ? "/" + uf : ""}</div>
                 ${vendorChip ? `<div style="margin-top:4px">${vendorChip}</div>` : ""}
                 ${oc ? `<div style="font-size:11px;color:${col.color};margin-top:4px;font-weight:600">${esc(oc)}</div>` : ""}
-                ${next ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:11px;color:${overdue ? "#dc2626" : "#7c3aed"};font-weight:600">📅 ${next}</span>${dueChip}</div>` : ""}
+                ${next ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font-size:11px;color:${overdue ? "#dc2626" : "#7c3aed"};font-weight:600">📅 ${window.castorDateBR(next)}</span>${dueChip}</div>` : ""}
               </div>`;
                 })
                 .join("") ||
@@ -13380,6 +13647,103 @@
                 }
               });
           });
+
+          // ----------------------------------------------------------------
+          // Arrastar card entre colunas (somente vendedor; admin observa).
+          // Ao soltar numa coluna DIFERENTE, abre o modal de interação
+          // pré-preenchido com o resultado padrão daquela coluna
+          // (KAN_DROP_DEFAULTS). Cancelar não altera nada — como não movemos
+          // o DOM, o card permanece exatamente onde estava. Só ao SALVAR o
+          // load() re-renderiza e o card cai na coluna correta de fato.
+          // ----------------------------------------------------------------
+          if (currentUserCtx().role !== "admin" && !state.selectionMode) {
+            el.querySelectorAll(".myr-card").forEach((card) => {
+              card.addEventListener("dragstart", (ev) => {
+                _dragData = {
+                  route: card.dataset.route,
+                  code: card.dataset.code,
+                  fromCol: card.dataset.curcol,
+                };
+                try {
+                  ev.dataTransfer.effectAllowed = "move";
+                  ev.dataTransfer.setData("text/plain", card.dataset.code);
+                } catch (e) {}
+                card.style.opacity = "0.45";
+              });
+              card.addEventListener("dragend", () => {
+                card.style.opacity = "1";
+                _dragData = null;
+                el.querySelectorAll(".myr-col").forEach(
+                  (c) => (c.style.outline = ""),
+                );
+              });
+            });
+            el.querySelectorAll(".myr-col").forEach((colEl) => {
+              colEl.addEventListener("dragover", (ev) => {
+                if (!_dragData) return;
+                ev.preventDefault();
+                try {
+                  ev.dataTransfer.dropEffect = "move";
+                } catch (e) {}
+                if (_dragData.fromCol !== colEl.dataset.col)
+                  colEl.style.outline = "2px dashed #7c3aed";
+              });
+              colEl.addEventListener("dragleave", () => {
+                colEl.style.outline = "";
+              });
+              colEl.addEventListener("drop", (ev) => {
+                ev.preventDefault();
+                colEl.style.outline = "";
+                const drag = _dragData;
+                _dragData = null;
+                if (!drag) return;
+                const targetCol = colEl.dataset.col;
+                // Mesma coluna → nada a fazer (card fica onde está).
+                if (drag.fromCol === targetCol) return;
+                _openMoveModal(drag.route, drag.code, targetCol);
+              });
+            });
+          }
+        }
+
+        // Abre o modal rico de interação pré-preenchido com o resultado padrão
+        // da coluna de destino. Se o vendedor cancelar, nada muda.
+        function _openMoveModal(routeId, code, targetColKey) {
+          const stop = state.stops.find(
+            (x) => x._route_id === routeId && x.cliente_codigo === code,
+          );
+          if (!stop) return;
+          const col = KAN_COLS.find((c) => c.key === targetColKey);
+          const defaults = Object.assign(
+            {},
+            KAN_DROP_DEFAULTS[targetColKey] || {},
+            { moveLabel: col ? col.title : null },
+          );
+          const nome = stop.name || stop.cliente_codigo;
+          if (
+            window.CastorInteractions &&
+            typeof window.CastorInteractions.openInteractionAdd === "function"
+          ) {
+            window.CastorInteractions.openInteractionAdd(
+              code,
+              nome,
+              routeId,
+              async () => {
+                state.openCardCode = null;
+                await load();
+                try {
+                  window.CastorInteractions.loadFollowupsBadge &&
+                    window.CastorInteractions.loadFollowupsBadge();
+                } catch (e) {}
+                try {
+                  window.RoutesSidebar &&
+                    window.RoutesSidebar.refresh &&
+                    window.RoutesSidebar.refresh();
+                } catch (e) {}
+              },
+              defaults,
+            );
+          }
         }
 
         function _updateGenerateBtn() {
@@ -13596,6 +13960,26 @@
             state.filters.to = $("myRouteDateTo").value;
             render();
           });
+          // Default de período: uma semana atrás → hoje (semana passada + atual).
+          // Datas em ISO (YYYY-MM-DD) para o value do input; a exibição segue o
+          // locale pt-BR do navegador (dia/mês/ano).
+          (function _initDateRange() {
+            const fromEl = $("myRouteDateFrom");
+            const toEl = $("myRouteDateTo");
+            if (!fromEl || !toEl) return;
+            const iso = (d) => d.toISOString().slice(0, 10);
+            const today = new Date();
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            if (!fromEl.value) {
+              fromEl.value = iso(weekAgo);
+              state.filters.from = fromEl.value;
+            }
+            if (!toEl.value) {
+              toEl.value = iso(today);
+              state.filters.to = toEl.value;
+            }
+          })();
           dq("myRouteReloadBtn", "click", () => load());
           dq("myRouteAssignTaskBtn", "click", () => {
             try {
@@ -13756,6 +14140,32 @@
             }
           });
           loadVendors();
+
+          // Auto-refresh silencioso (5 min): traz cards novos enviados pelo
+          // admin sem precisar recarregar a página. Só atualiza quando a aba
+          // "Meu Roteiro" está ativa e visível, e nada está sendo editado
+          // (sem popover de card aberto, sem modo de seleção) para não
+          // atrapalhar o usuário no meio de uma ação.
+          try {
+            const _isMyRouteActive = () =>
+              document.querySelector(".routes-tab.active")?.dataset.tab ===
+              "myroute";
+            const _autoTick = () => {
+              try {
+                if (document.hidden) return;
+                if (!_isMyRouteActive()) return;
+                if (state.loading) return;
+                if (state.selectionMode) return;
+                if (state.openCardCode) return; // popover de edição aberto
+                load();
+              } catch (e) {}
+            };
+            if (!MyRoutePage._autoTimer)
+              MyRoutePage._autoTimer = setInterval(_autoTick, 5 * 60 * 1000);
+            document.addEventListener("visibilitychange", () => {
+              if (!document.hidden) _autoTick();
+            });
+          } catch (e) {}
         }
 
         return { init, load, peek: () => state.stops.slice() };
@@ -14250,6 +14660,8 @@
 
         // ---------- Follow-ups modal ----------
         let _allFollowups = [];
+        // Seleção p/ "roteiro rápido no Maps" (não persiste nada).
+        const _fuSelected = new Set();
         // Parse defensivo: alguns servidores devolvem body vazio em erro / preflight.
         async function safeJson(resp) {
           const txt = await resp.text();
@@ -14346,12 +14758,15 @@
                 }[f.last_outcome] || "—";
               return `<div data-code="${esc(f.cliente_codigo)}" style="border:1px solid ${overdue ? "#fecaca" : "var(--border-color,#e5e5e5)"};border-radius:6px;padding:10px;${overdue ? "background:rgba(220,38,38,.04)" : ""}">
               <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:4px">
-                <div style="flex:1;min-width:0">
-                  <div style="font-weight:600;font-size:0.88rem">${esc(f.cliente_nome || f.cliente_codigo)}</div>
-                  <div style="font-size:0.74rem;color:var(--text-secondary)">cod ${esc(f.cliente_codigo)} · ${esc(f.municipio || "")}/${esc(f.uf || "")}</div>
+                <div style="flex:1;min-width:0;display:flex;gap:8px;align-items:start">
+                  <input type="checkbox" class="fu-pick" ${_fuSelected.has(f.cliente_codigo) ? "checked" : ""} title="Selecionar para roteiro" style="margin-top:3px;cursor:pointer" />
+                  <div style="min-width:0">
+                    <div style="font-weight:600;font-size:0.88rem">${esc(f.cliente_nome || f.cliente_codigo)}</div>
+                    <div style="font-size:0.74rem;color:var(--text-secondary)">cod ${esc(f.cliente_codigo)} · ${esc(f.municipio || "")}/${esc(f.uf || "")}</div>
+                  </div>
                 </div>
                 <div style="text-align:right">
-                  <div style="font-size:11px;color:#7c3aed;font-weight:600">📅 ${esc(String(f.next_contact_at).slice(0, 10))}</div>
+                  <div style="font-size:11px;color:#7c3aed;font-weight:600">📅 ${esc(window.castorDateBR(f.next_contact_at))}</div>
                   ${badge}
                 </div>
               </div>
@@ -14400,6 +14815,105 @@
               );
             });
           });
+          // Seleção p/ roteiro
+          listEl.querySelectorAll(".fu-pick").forEach((cb) => {
+            cb.addEventListener("change", () => {
+              const code = cb.closest("[data-code]").dataset.code;
+              if (cb.checked) _fuSelected.add(code);
+              else _fuSelected.delete(code);
+              _syncFollowupsSelection();
+            });
+          });
+          _syncFollowupsSelection();
+        }
+        // Mantém em dia o contador, o estado do botão de rota e o "selecionar todos".
+        function _syncFollowupsSelection() {
+          const codes = _allFollowups.map((f) => f.cliente_codigo);
+          // remove da seleção quem saiu da lista (mudou janela/busca)
+          for (const c of Array.from(_fuSelected))
+            if (!codes.includes(c)) _fuSelected.delete(c);
+          const n = _fuSelected.size;
+          const cntEl = $("followupsSelCount");
+          if (cntEl) cntEl.textContent = n + " selecionado" + (n === 1 ? "" : "s");
+          const btn = $("followupsRouteBtn");
+          if (btn) {
+            btn.disabled = n < 1;
+            btn.style.opacity = n < 1 ? "0.5" : "1";
+            btn.style.cursor = n < 1 ? "default" : "pointer";
+          }
+          const all = $("followupsSelectAll");
+          if (all) {
+            const visible = codes.length;
+            const picked = codes.filter((c) => _fuSelected.has(c)).length;
+            all.checked = visible > 0 && picked === visible;
+            all.indeterminate = picked > 0 && picked < visible;
+          }
+        }
+        // Roteiro rápido no Google Maps a partir da seleção. NÃO salva nada:
+        // só abre o link de direções (origem = localização atual quando permitida).
+        function _generateFollowupsRoute() {
+          const picked = _allFollowups.filter((f) =>
+            _fuSelected.has(f.cliente_codigo),
+          );
+          if (!picked.length) return;
+          const host = $("followupsRouteResult");
+          const addrOf = (f) =>
+            [f.endereco, f.municipio, f.uf, "Brasil"]
+              .filter(Boolean)
+              .join(", ");
+          const stops = picked
+            .map((f) => ({ f, addr: addrOf(f) }))
+            .filter((x) => x.addr && x.addr !== "Brasil");
+          if (stops.length < 1) {
+            if (host)
+              host.innerHTML =
+                '<div style="font-size:12px;color:#dc2626;padding:8px">Nenhuma empresa selecionada tem endereço/município para montar a rota.</div>';
+            return;
+          }
+          const buildAndShow = (origin) => {
+            const wp = stops.map((s) => encodeURIComponent(s.addr));
+            const dest = wp[wp.length - 1];
+            const mid = wp.slice(0, -1).join("|");
+            let url = "https://www.google.com/maps/dir/?api=1";
+            if (origin) url += "&origin=" + origin;
+            url += "&destination=" + dest;
+            if (mid) url += "&waypoints=" + mid;
+            url += "&travelmode=driving";
+            if (host) {
+              host.innerHTML = `<div style="padding:12px;background:var(--bg-secondary,#fafafa);border:1px solid var(--border-color,#e5e5e5);border-radius:8px;margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <strong style="font-size:13px">🗺️ Roteiro rápido · ${stops.length} parada${stops.length === 1 ? "" : "s"}${origin ? " · origem: sua localização" : ""}</strong>
+                  <button id="followupsRouteClose" type="button" style="font-size:11px;padding:3px 9px;background:transparent;border:1px solid var(--border-color,#e5e5e5);border-radius:4px;cursor:pointer">Fechar</button>
+                </div>
+                <ol style="font-size:12px;margin:4px 0 8px 18px;padding:0">
+                  ${stops.map((s) => `<li>${esc(s.f.cliente_nome || s.f.cliente_codigo)} <span style="color:var(--text-secondary)">(${esc(s.f.municipio || "")}/${esc(s.f.uf || "")})</span></li>`).join("")}
+                </ol>
+                <a href="${url}" target="_blank" rel="noopener" style="display:inline-block;padding:8px 14px;background:#0ea5e9;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px">📍 Abrir no Google Maps</a>
+                <div style="font-size:11px;color:var(--text-secondary);margin-top:8px">A rota não é salva — é só um link de navegação. O Google otimiza o trajeto a partir dos endereços.</div>
+              </div>`;
+              $("followupsRouteClose")?.addEventListener("click", () => {
+                host.innerHTML = "";
+              });
+              host.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          };
+          if (host)
+            host.innerHTML =
+              '<div style="font-size:12px;color:var(--text-secondary);padding:8px">Obtendo sua localização…</div>';
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) =>
+                buildAndShow(
+                  pos.coords.latitude.toFixed(6) +
+                    "," +
+                    pos.coords.longitude.toFixed(6),
+                ),
+              () => buildAndShow(null), // permissão negada → sem origem (Maps usa a do app)
+              { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+            );
+          } else {
+            buildAndShow(null);
+          }
         }
         async function loadFollowupsBadge() {
           const userId =
@@ -14427,7 +14941,7 @@
 
         // ---------- Interaction add modal ----------
         let _iaCtx = null;
-        function openInteractionAdd(clienteCodigo, nome, routeId, onSaved) {
+        function openInteractionAdd(clienteCodigo, nome, routeId, onSaved, defaults) {
           // Admin não responde cards — apenas observa / atribui vendedores.
           try {
             const role =
@@ -14455,28 +14969,55 @@
             routeId: _safeRouteId,
             onSaved,
           };
+          // Defaults vindos do drag-and-drop (coluna de destino do kanban):
+          // {interaction_type, outcome, next_days, moveLabel}. Sem defaults,
+          // mantém o comportamento clássico (visita presencial, sem resultado).
+          const _d = defaults || {};
+          const _type = _d.interaction_type || "visita_presencial";
+          const _outcome = _d.outcome || "";
           $("interactionAddSubtitle").textContent =
-            `${nome || clienteCodigo} · cod ${clienteCodigo}`;
-          $("iaType").value = "visita_presencial";
+            `${nome || clienteCodigo} · cod ${clienteCodigo}` +
+            (_d.moveLabel ? ` · → ${_d.moveLabel}` : "");
+          $("iaType").value = _type;
           window.castorPopulateOutcomeSelect(
             $("iaOutcome"),
-            "visita_presencial",
-            "",
+            _type,
+            _outcome,
             true,
           );
-          $("iaOutcome").value = "";
+          $("iaOutcome").value = _outcome;
           $("iaNotes").value = "";
-          $("iaNextDate").value = "";
-          $("iaNextDate").disabled = false;
-          $("iaNextDate").min = new Date().toISOString().slice(0, 10);
           $("iaNextAction").value = "";
+          const dInput = $("iaNextDate");
+          dInput.min = new Date().toISOString().slice(0, 10);
+          // Pré-preenche a data de retorno de forma coerente com o resultado:
+          // terminal/convertido → sem data; senão next_days forçado (drag) ou
+          // o padrão do outcome (CASTOR_OUTCOME_DEFAULT_DAYS).
+          const _terminal =
+            _outcome && window.CASTOR_OUTCOMES_TERMINAL.has(_outcome);
+          const _closing = _terminal || _outcome === "convertido";
+          dInput.disabled = !!_closing;
+          dInput.value = "";
+          if (!_closing && _outcome) {
+            const _days =
+              typeof _d.next_days === "number"
+                ? _d.next_days
+                : window.CASTOR_OUTCOME_DEFAULT_DAYS[_outcome];
+            if (typeof _days === "number") {
+              const _dt = new Date();
+              _dt.setDate(_dt.getDate() + _days);
+              dInput.value = _dt.toISOString().slice(0, 10);
+            }
+          }
           const _hint = $("iaNextRequiredHint");
-          if (_hint) _hint.style.display = "none";
+          if (_hint)
+            _hint.style.display = _outcome && !_closing ? "inline" : "none";
           const err = $("interactionAddError");
           err.style.display = "none";
           err.textContent = "";
           $("interactionAddModal").style.display = "flex";
         }
+
         async function saveInteractionAdd() {
           if (!_iaCtx) return;
           const err = $("interactionAddError");
@@ -14583,6 +15124,14 @@
           );
           // Followups
           $("followupsOpenBtn")?.addEventListener("click", async () => {
+            _fuSelected.clear();
+            const rr = $("followupsRouteResult");
+            if (rr) rr.innerHTML = "";
+            const sa = $("followupsSelectAll");
+            if (sa) {
+              sa.checked = false;
+              sa.indeterminate = false;
+            }
             $("followupsModal").style.display = "flex";
             await loadFollowups();
           });
@@ -14591,6 +15140,25 @@
           });
           $("followupsDaysAhead")?.addEventListener("change", loadFollowups);
           $("followupsSearch")?.addEventListener("input", renderFollowups);
+          $("followupsSelectAll")?.addEventListener("change", (ev) => {
+            const q = ($("followupsSearch").value || "").toLowerCase();
+            const visible = _allFollowups.filter((f) => {
+              if (!q) return true;
+              return (
+                (f.cliente_nome || "").toLowerCase().includes(q) ||
+                (f.cliente_codigo || "").toLowerCase().includes(q) ||
+                (f.municipio || "").toLowerCase().includes(q)
+              );
+            });
+            if (ev.target.checked)
+              visible.forEach((f) => _fuSelected.add(f.cliente_codigo));
+            else visible.forEach((f) => _fuSelected.delete(f.cliente_codigo));
+            renderFollowups();
+          });
+          $("followupsRouteBtn")?.addEventListener(
+            "click",
+            _generateFollowupsRoute,
+          );
           // Interaction add
           $("interactionAddCloseBtn")?.addEventListener("click", () => {
             $("interactionAddModal").style.display = "none";
@@ -14696,7 +15264,10 @@
         }
         function fmtDateShort(s) {
           try {
-            const d = new Date(s);
+            const v = /^\d{4}-\d{2}-\d{2}$/.test(String(s))
+              ? s + "T00:00:00"
+              : s;
+            const d = new Date(v);
             return d.toLocaleDateString("pt-BR", {
               day: "2-digit",
               month: "2-digit",
@@ -15254,6 +15825,15 @@
           $("sbRoutesMoreBtn")?.addEventListener("click", () =>
             document.getElementById("savedRoutesBtn")?.click(),
           );
+          $("sbPortfolioOpenBtn")?.addEventListener("click", () => {
+            window.CastorPortfolio && window.CastorPortfolio.open();
+          });
+          $("sbPortfolioHint")?.addEventListener("click", () => {
+            window.CastorPortfolio && window.CastorPortfolio.open();
+          });
+          $("sbRecontatosOpenBtn")?.addEventListener("click", () =>
+            document.getElementById("followupsOpenBtn")?.click(),
+          );
           document.addEventListener("visibilitychange", () => {
             if (!document.hidden) refresh();
           });
@@ -15262,6 +15842,263 @@
       })();
       RoutesSidebar.init();
       window.RoutesSidebar = RoutesSidebar;
+
+      // ============================================================
+      // CastorPortfolio: lista de empresas na carteira do vendedor.
+      // Vendedor vê a própria carteira; admin escolhe o vendedor no
+      // seletor do topo. Read-only via RPC castor_vendor_portfolio.
+      // ============================================================
+      const CastorPortfolio = (() => {
+        function $(id) {
+          return document.getElementById(id);
+        }
+        function esc(s) {
+          return String(s == null ? "" : s).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        }
+        function _isAdmin() {
+          try {
+            return (
+              (window.getCurrentUserRole &&
+                window.getCurrentUserRole()) === "admin"
+            );
+          } catch (e) {
+            return false;
+          }
+        }
+        function fmtMoney(n) {
+          const v = Number(n || 0);
+          try {
+            return v.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+              maximumFractionDigits: 0,
+            });
+          } catch (e) {
+            return "R$ " + Math.round(v);
+          }
+        }
+        function fmtDate(s) {
+          if (!s) return "—";
+          try {
+            const v = /^\d{4}-\d{2}-\d{2}$/.test(String(s))
+              ? s + "T00:00:00"
+              : s;
+            return new Date(v).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "2-digit",
+            });
+          } catch (e) {
+            return "—";
+          }
+        }
+        const STATUS_CHIP = {
+          ATIVO: ["#10b981", "Ativo"],
+          EM_RISCO: ["#f59e0b", "Em risco"],
+          REATIVAR: ["#f97316", "Reativar"],
+          INATIVO: ["#ef4444", "Inativo"],
+          DORMENTE: ["#64748b", "Dormente"],
+          SEM_HISTORICO: ["#94a3b8", "Sem histórico"],
+        };
+
+        let _all = []; // último resultado bruto (clients)
+        let _targetUserId = null; // vendedor selecionado (admin) ou self
+        let _targetVendorCode = null; // código Protheus selecionado (admin)
+
+        async function _ensureUsersCache() {
+          if (
+            Array.isArray(window.__castorUsersCache) &&
+            window.__castorUsersCache.length
+          )
+            return window.__castorUsersCache;
+          try {
+            const { data } = await window.supabaseClient.rpc(
+              "castor_admin_list_users",
+            );
+            window.__castorUsersCache = data || [];
+          } catch (e) {
+            window.__castorUsersCache = [];
+          }
+          return window.__castorUsersCache;
+        }
+
+        async function _buildVendorSelect() {
+          const sel = $("portfolioVendorSelect");
+          if (!sel) return;
+          if (!_isAdmin()) {
+            sel.style.display = "none";
+            return;
+          }
+          // Admin escolhe um vendedor REAL do Protheus (a3_cod) — independe de
+          // o vendedor ter login no app ou vínculo castor_vendor_user.
+          const dir =
+            (window.castorLoadVendorDirectory &&
+              (await window.castorLoadVendorDirectory())) ||
+            [];
+          sel.innerHTML = dir
+            .map((v) => {
+              const c = String(v.a3_cod || "").trim();
+              if (!c) return "";
+              const nm = v.a3_nome || v.a3_nreduz || "";
+              const n = v.total_clientes || 0;
+              const label = (nm ? nm + " · " : "") + c + " (" + n + ")";
+              return `<option value="${esc(c)}"${c === _targetVendorCode ? " selected" : ""}>${esc(label)}</option>`;
+            })
+            .join("");
+          sel.style.display = dir.length ? "inline-block" : "none";
+          if (!_targetVendorCode && dir.length)
+            _targetVendorCode = String(dir[0].a3_cod || "").trim();
+        }
+
+        async function load() {
+          const caller =
+            (window.getCurrentUserId && window.getCurrentUserId()) || null;
+          if (!caller) {
+            try {
+              (window.requestLogin || (() => {}))();
+            } catch (e) {}
+            return;
+          }
+          const listEl = $("portfolioList");
+          listEl.innerHTML = '<div class="sb-empty">Carregando…</div>';
+          $("portfolioSummary").innerHTML = "";
+          const q = ($("portfolioSearch").value || "").trim();
+          const isAdmin = _isAdmin();
+          try {
+            const { data, error } = await window.supabaseClient.rpc(
+              "castor_vendor_portfolio",
+              {
+                p_caller: caller,
+                // Admin → por código Protheus; vendedor → ele mesmo (vínculo).
+                p_target_user_id: null,
+                p_q: q || null,
+                p_limit: 1000,
+                p_vendor_code: isAdmin ? _targetVendorCode || null : null,
+              },
+            );
+            if (error) throw error;
+            if (!data || data.ok === false)
+              throw new Error((data && data.error) || "falha");
+            _all = data.clients || [];
+            _renderSummary(data);
+            _renderList(_all);
+            const sub = $("portfolioSubtitle");
+            if (sub) {
+              const who = data.target_name
+                ? `${data.target_name}`
+                : "vendedor";
+              sub.textContent = data.vendor_code
+                ? `${who} · código ${data.vendor_code} · ${data.total} empresa(s)`
+                : isAdmin
+                  ? `${who} — vendedor sem clientes nesta base`
+                  : `${who} — sem código Protheus vinculado (peça ao admin para vincular em Usuários → editar)`;
+            }
+            const pill = $("sbPortfolioPill");
+            if (pill && !_isAdmin()) pill.textContent = data.total || 0;
+          } catch (e) {
+            listEl.innerHTML =
+              '<div class="sb-empty">Erro ao carregar carteira: ' +
+              esc(e.message || e) +
+              "</div>";
+          }
+        }
+
+        function _renderSummary(data) {
+          const s = data.summary || {};
+          const el = $("portfolioSummary");
+          const chip = (color, label) =>
+            `<span style="background:${color}1a;color:${color};font-weight:700;padding:3px 8px;border-radius:6px">${label}</span>`;
+          el.innerHTML =
+            chip("#0f172a", `Total: ${data.total || 0}`) +
+            chip("#10b981", `Ativos: ${s.ativos || 0}`) +
+            chip("#f97316", `Reativar: ${s.reativar || 0}`) +
+            chip("#94a3b8", `Sem histórico: ${s.sem_historico || 0}`) +
+            chip("#7c3aed", `Faturamento: ${fmtMoney(s.faturamento_total)}`);
+        }
+
+        function _renderList(rows) {
+          const el = $("portfolioList");
+          if (!rows || !rows.length) {
+            el.innerHTML =
+              '<div class="sb-empty">Nenhuma empresa na carteira.</div>';
+            return;
+          }
+          el.innerHTML = rows
+            .map((c) => {
+              const st = STATUS_CHIP[c.status_real] || ["#94a3b8", c.status_real || "—"];
+              const phone = c.contato_tel
+                ? `<a class="sb-act" href="tel:${esc(c.contato_tel)}" onclick="event.stopPropagation()">📞</a>`
+                : "";
+              const wa = c.contato_whats
+                ? `<a class="sb-act wa" href="https://wa.me/${esc(String(c.contato_whats).replace(/\D/g, ""))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">💬</a>`
+                : "";
+              const mail = c.contato_email
+                ? `<a class="sb-act" href="mailto:${esc(c.contato_email)}" onclick="event.stopPropagation()">✉️</a>`
+                : "";
+              const place = [c.a1_mun, c.a1_est].filter(Boolean).join("/");
+              return `<div class="portfolio-row" data-code="${esc(c.cliente_codigo)}" title="Abrir detalhes de ${esc(c.a1_nome || c.cliente_codigo)}"
+                style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;background:var(--bg-chat)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.a1_nome || c.cliente_codigo)}</div>
+                  <div style="font-size:.76rem;color:var(--text-secondary)">${esc(c.cliente_codigo)}${place ? " · " + esc(place) : ""} · últ. pedido ${fmtDate(c.ultimo_pedido)}</div>
+                </div>
+                <div style="text-align:right;white-space:nowrap">
+                  <div style="font-weight:700;font-size:.82rem">${fmtMoney(c.faturamento_alltime)}</div>
+                  <span style="display:inline-block;margin-top:2px;font-size:.68rem;background:${st[0]}1a;color:${st[0]};font-weight:700;padding:1px 6px;border-radius:5px">${esc(st[1])}</span>
+                </div>
+                <div style="display:flex;gap:4px" onclick="event.stopPropagation()">${phone}${wa}${mail}</div>
+              </div>`;
+            })
+            .join("");
+          el.querySelectorAll(".portfolio-row").forEach((r) => {
+            r.addEventListener("click", () => {
+              const code = r.dataset.code;
+              if (
+                window.ClientDetail &&
+                typeof window.ClientDetail.open === "function"
+              )
+                window.ClientDetail.open(code);
+            });
+          });
+        }
+
+        let _searchTimer = null;
+        async function open() {
+          $("portfolioModal").style.display = "flex";
+          await _buildVendorSelect();
+          await load();
+        }
+        function close() {
+          $("portfolioModal").style.display = "none";
+        }
+        function init() {
+          $("portfolioCloseBtn")?.addEventListener("click", close);
+          $("portfolioModal")?.addEventListener("click", (ev) => {
+            if (ev.target === $("portfolioModal")) close();
+          });
+          $("portfolioVendorSelect")?.addEventListener("change", (ev) => {
+            _targetVendorCode = ev.target.value || null;
+            load();
+          });
+          $("portfolioSearch")?.addEventListener("input", () => {
+            clearTimeout(_searchTimer);
+            _searchTimer = setTimeout(load, 300);
+          });
+        }
+        return { init, open, close };
+      })();
+      CastorPortfolio.init();
+      window.CastorPortfolio = CastorPortfolio;
 
       // ============================================================
       // CastorAdminTaskAssign: admin lança tarefa para um vendedor
@@ -15703,6 +16540,7 @@
               none: "nenhum candidato",
             };
             const scopeLbl = scopeMap[d.scope_used] || d.scope_used || "—";
+            const hist = d.by_history || {};
             const ufs = Array.isArray(d.scope_estados)
               ? d.scope_estados.join(",")
               : "";
@@ -15724,6 +16562,8 @@
               `🔁 ${by.reativacao || 0} reativar · ` +
               `🌟 ${by.ativo_bom || 0} ativos bons · ` +
               `🆕 ${by.prospect || 0} leads · ` +
+              `✨ ${hist.virgin || 0} nunca trabalhadas · ` +
+              `📇 ${hist.worked || 0} já trabalhadas · ` +
               `<span style="color:#7c3aed">${scopeLbl}</span> · ${escopoTxt}`;
             render();
           } catch (e) {
@@ -15810,6 +16650,13 @@
               const warn = warnBits.length
                 ? `<div style="font-size:11px;color:#b45309;background:#fef3c7;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block">⚠ ${warnBits.join(" · ")} — preencha abaixo</div>`
                 : "";
+              // Histórico de interação: tag visual + aviso de carteira anterior.
+              const histChip = it.has_history
+                ? `<span title="Esta empresa já recebeu ${it.history_count || 0} interação(ões) — já passou pela carteira de alguém. Só aparece aqui porque saiu de todo fluxo aberto." style="font-size:11px;background:#fef9c3;color:#92400e;padding:2px 6px;border-radius:10px;font-weight:600">📇 já trabalhada${it.history_count ? " ×" + it.history_count : ""}</span>`
+                : `<span title="Nenhuma interação registrada — empresa virgem, prioridade." style="font-size:11px;background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:10px;font-weight:600">✨ nunca trabalhada</span>`;
+              const histNote = it.has_history
+                ? `<div style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;padding:3px 6px;border-radius:4px;margin-top:4px;display:inline-block">📇 já passou por carteira${it.history_vendor ? " — últ. vendedor: " + esc(it.history_vendor) : ""}${it.last_interaction_outcome ? " · " + esc(it.last_interaction_outcome) : ""}${it.last_interaction_at ? " (" + esc(String(it.last_interaction_at).slice(0, 10)) + ")" : ""}</div>`
+                : "";
               const bucketStyle = {
                 reativacao: ["🔁 reativar", "#fee2e2", "#b91c1c"],
                 ativo_bom: ["🌟 ativo bom", "#dcfce7", "#15803d"],
@@ -15829,6 +16676,7 @@
                     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                       <strong style="font-size:14px">${esc(it.a1_nome || it.cliente_codigo)}</strong>
                       ${bucketChip}
+                      ${histChip}
                       <span style="font-size:11px;background:#ede9fe;color:#6d28d9;padding:2px 6px;border-radius:10px">${esc(it.status_real || "")}</span>
                       <span style="font-size:11px;color:var(--text-secondary)">urgência ${it.urgencia_score ?? "-"}</span>
                     </div>
@@ -15837,6 +16685,7 @@
                       · últ. pedido: ${it.ultimo_pedido ? esc(it.ultimo_pedido) : "—"}
                       ${it.dias_sem_pedido != null ? ` · ${it.dias_sem_pedido}d` : ""}
                     </div>
+                    ${histNote}
                     ${warn}
                   </div>
                   <div style="display:flex;gap:4px;flex-shrink:0">
@@ -16641,7 +17490,10 @@
         }
         function fmtDate(s) {
           try {
-            return new Date(s).toLocaleDateString("pt-BR");
+            const v = /^\d{4}-\d{2}-\d{2}$/.test(String(s))
+              ? s + "T00:00:00"
+              : s;
+            return new Date(v).toLocaleDateString("pt-BR");
           } catch (e) {
             return "";
           }
@@ -17077,6 +17929,40 @@
         await loadUsersPage();
       }
 
+      // Popula o <select id="formVendorCode"> com os vendedores do Protheus.
+      async function populateVendorSelect(selectedCode) {
+        const sel = document.getElementById("formVendorCode");
+        if (!sel) return;
+        const code = selectedCode == null ? "" : String(selectedCode).trim();
+        const dir = await window.castorLoadVendorDirectory();
+        const esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"]/g,
+            (c) =>
+              ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+          );
+        let opts = '<option value="">— Sem vínculo —</option>';
+        let found = false;
+        opts += (dir || [])
+          .map((v) => {
+            const c = String(v.a3_cod || "").trim();
+            if (!c) return "";
+            if (c === code) found = true;
+            const nm = v.a3_nome || v.a3_nreduz || "";
+            const n = v.total_clientes || 0;
+            const label =
+              c + (nm ? " · " + nm : "") + " (" + n + " cliente(s))";
+            return `<option value="${esc(c)}">${esc(label)}</option>`;
+          })
+          .join("");
+        // Código vinculado que não está no diretório (sem clientes ativos) → mantém.
+        if (code && !found) {
+          opts += `<option value="${esc(code)}">${esc(code)} · (vínculo atual)</option>`;
+        }
+        sel.innerHTML = opts;
+        sel.value = code;
+      }
+
       async function openEditUser(u) {
         editingUserId = u.user_id;
         document.getElementById("userFormTitle").textContent = "Editar Usuário";
@@ -17118,6 +18004,8 @@
         renderGroupedCidades("");
         updateCidadesTrigger();
 
+        await populateVendorSelect(u.vendor_code || "");
+
         document.getElementById("userFormPanel").style.display = "block";
         lucide.createIcons();
       }
@@ -17157,6 +18045,8 @@
           ? cidadesTrigger.querySelector(".ms-tags")
           : null;
         if (tags) tags.remove();
+
+        populateVendorSelect("");
 
         document.getElementById("userFormPanel").style.display = "block";
         lucide.createIcons();
@@ -18707,6 +19597,18 @@
                 p_cidades: JSON.stringify(getSelectedCidadesArray()),
               });
               if (error) throw error;
+              // Vínculo Protheus (carteira) — best-effort, não bloqueia o save.
+              try {
+                const vc = (
+                  document.getElementById("formVendorCode")?.value || ""
+                ).trim();
+                await supabaseClient.rpc(USER_RPC.SET_VENDOR, {
+                  p_user_id: editingUserId,
+                  p_codigo: vc,
+                });
+              } catch (ve) {
+                /* warn suppressed */
+              }
             } else {
               const email = document.getElementById("formEmail").value.trim();
               const password = document.getElementById("formPassword").value;
@@ -18735,6 +19637,19 @@
                   { p_user_id: signupData.user.id },
                 );
                 if (confirmError) {
+                  /* warn suppressed */
+                }
+                // Vínculo Protheus (carteira) para o novo usuário.
+                try {
+                  const vc = (
+                    document.getElementById("formVendorCode")?.value || ""
+                  ).trim();
+                  if (vc)
+                    await supabaseClient.rpc(USER_RPC.SET_VENDOR, {
+                      p_user_id: signupData.user.id,
+                      p_codigo: vc,
+                    });
+                } catch (ve) {
                   /* warn suppressed */
                 }
               }
