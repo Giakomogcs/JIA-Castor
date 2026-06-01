@@ -13,4 +13,5 @@ Veja o conteúdo completo em `RAG/regras_de_negocio_castor.md`.
 - Porte: MEI/ME=pequeno, EPP=medio, DEMAIS=grande. Cache RF 30 dias. Histórico 12m calculado em `castor_metrics_sf2010` (ticket médio).
 - Roteirização: nearest-neighbor Haversine a partir do depósito Diadema/SP (lat -23.6884, lng -46.6178).
 - Visibilidade: admin vê tudo; vendedor vê apenas onde `a1_vend = castor_my_vendor_code()`.
+- Camada analítica (migration 037): SD2010 (itens de NF) alimenta `castor_metrics_produto*`, `castor_metrics_mensal`, `castor_metrics_venda_cliente`. Faturamento conta só **venda** (CFOP), excluindo bonificação (59x/69x) e devolução (1x/2x) via `castor_cfop_class`. SA1010 vira cadastro mestre (`castor_cliente_enriquecido`). RPCs/tools: `get_product_mix`, `get_top_products`, `get_top_groups`, `get_sales_trend`, `get_crosssell_suggestions`, `get_client_status_history`. Front: aba **Produtos**.
 - RAG: pasta dedicada `1Azpe9hHXObz93rio04AVWuUxGOlUlbjj`. Update via `files.update` no mesmo `file_id`. Nunca `files.delete`.

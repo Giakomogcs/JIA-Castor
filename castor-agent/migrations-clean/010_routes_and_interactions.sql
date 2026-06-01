@@ -1163,12 +1163,14 @@ BEGIN
 
   RETURN QUERY
   WITH last_per_client AS (
+    -- Interação GENUINAMENTE mais recente por cliente (sem pré-filtrar por
+    -- next_contact_at). Se a última interação resolveu/zerou o agendamento, o
+    -- cliente sai da fila — não "volta" para uma interação antiga vencida.
     SELECT DISTINCT ON (cliente_codigo)
            cliente_codigo, vendedor_user_id, interaction_type, outcome, notes,
            next_contact_at, occurred_at
       FROM castor_client_interactions
-     WHERE next_contact_at IS NOT NULL
-     ORDER BY cliente_codigo, occurred_at DESC
+     ORDER BY cliente_codigo, occurred_at DESC, created_at DESC, id DESC
   )
   SELECT
     l.cliente_codigo,
@@ -1186,7 +1188,8 @@ BEGIN
     l.vendedor_user_id
   FROM last_per_client l
   LEFT JOIN castor_client_metrics_v2 m ON m.cliente_codigo = l.cliente_codigo
-  WHERE l.next_contact_at <= v_cap_date
+  WHERE l.next_contact_at IS NOT NULL
+    AND l.next_contact_at <= v_cap_date
     AND (v_is_admin OR l.vendedor_user_id = p_user_id)
     AND COALESCE(m.lifecycle_status,'ativo') NOT IN ('encerrado','nao_interessado_permanente')
   ORDER BY l.next_contact_at ASC NULLS LAST

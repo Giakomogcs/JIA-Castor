@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Castor - Copiloto Comercial</title>
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <!-- SheetJS: parse de XLSX/XLS no browser (evita OOM no n8n em dumps grandes ex.: SB1010 303 cols) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
@@ -3326,6 +3328,16 @@
               <i data-lucide="map-pin"></i>
               <span>Roteiros</span>
             </button>
+            <button
+              class="sidebar-nav-btn"
+              id="navProductsBtn"
+              data-nav="products"
+              role="tab"
+              aria-selected="false"
+            >
+              <i data-lucide="package"></i>
+              <span>Produtos</span>
+            </button>
           </div>
           <div id="sidebar-header">
             <button id="newChatBtn">
@@ -4495,6 +4507,39 @@
               </thead>
               <tbody id="routesTableBody"></tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- ===================== PRODUTOS ===================== -->
+        <section id="productsPage" style="display: none; flex-direction: column; overflow: auto;">
+          <div class="users-page-header">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <h2 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: var(--text-primary);">
+                Produtos &amp; Faturamento
+                <span id="prodScopeLabel" style="font-size: 13px; color: var(--text-secondary); font-weight: 400;"></span>
+              </h2>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <button class="btn-modal" id="prodRefreshBtn" title="Recarregar">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px"></i>
+                <span>Atualizar</span>
+              </button>
+            </div>
+          </div>
+          <div id="prodStatus" style="padding: 8px 16px; font-size: 13px; color: var(--text-secondary);"></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding: 0 16px 24px;">
+            <div style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 12px; padding: 16px;">
+              <h3 style="margin: 0 0 12px; font-size: 1rem; color: var(--text-primary);">Top produtos (faturamento de venda)</h3>
+              <div id="prodTopProducts" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+            <div style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 12px; padding: 16px;">
+              <h3 style="margin: 0 0 12px; font-size: 1rem; color: var(--text-primary);">Top grupos de produto</h3>
+              <div id="prodTopGroups" style="display: flex; flex-direction: column; gap: 6px;"></div>
+            </div>
+            <div style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 12px; padding: 16px; grid-column: 1 / -1;">
+              <h3 style="margin: 0 0 12px; font-size: 1rem; color: var(--text-primary);">Tendência de faturamento (mês a mês — só vendas)</h3>
+              <div id="prodTrend" style="display: flex; align-items: flex-end; gap: 4px; min-height: 140px;"></div>
+            </div>
           </div>
         </section>
       </div>
@@ -6239,11 +6284,18 @@
       const SOURCE_STATUS_URL = `${API_BASE}/castor-source-status`;
       const SOURCE_DRIVE_FOLDER_ID = `1mFSgsUNhDCAsq73prFtD5b1RyqtXpIUx`;
       const INGESTABLE_TABLES = new Set([
+        "SA1010",
         "SA3010",
         "CC2010",
         "ZA7010",
         "SF2010",
         "SC5010",
+        "SB1010",
+        "SBM010",
+        "SD2010",
+        "SF4010",
+        "SX5010",
+        "SZ1010",
       ]);
       const PANEL_SNAPSHOT_URL = `${API_BASE}/castor-panel-snapshot`;
       const PANEL_ROUTE_URL = `${API_BASE}/castor-panel-route`;
@@ -6793,6 +6845,38 @@
         }
       }
 
+      // ==========================================================
+      // Portão global de concorrência + retry para webhooks n8n.
+      // Motivo: o front dispara muitos webhooks ao mesmo tempo (ex.:
+      // detalhes de rota em paralelo, listas, geocode). Sem limite,
+      // o n8n satura e o servidor cai. Aqui TODA chamada a API_BASE é
+      // enfileirada: no máximo N8N_MAX_CONCURRENT requisições em voo;
+      // as demais aguardam a vez. Inclui retry com backoff exponencial
+      // (e respeito a Retry-After) para 429/502/503/504, de forma
+      // idempotente (POST só repete em 429, que não chega a processar).
+      // ==========================================================
+      const N8N_MAX_CONCURRENT = 4; // nº máx de webhooks n8n simultâneos
+      const N8N_MAX_RETRIES = 3; // tentativas extras em sobrecarga/erro transitório
+      const N8N_RETRY_BASE_MS = 600; // base do backoff exponencial
+      let _n8nActive = 0;
+      const _n8nQueue = [];
+      function _n8nAcquire() {
+        if (_n8nActive < N8N_MAX_CONCURRENT) {
+          _n8nActive++;
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => _n8nQueue.push(resolve));
+      }
+      function _n8nRelease() {
+        const next = _n8nQueue.shift();
+        if (next) {
+          next(); // mantém o "slot" ocupado e passa para o próximo da fila
+        } else {
+          _n8nActive = Math.max(0, _n8nActive - 1);
+        }
+      }
+      const _n8nSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
       const originalFetch = window.fetch;
       window.fetch = async function (...args) {
         let url = "";
@@ -6802,23 +6886,75 @@
           url = args[0].url;
         }
 
+        const isN8n = url.startsWith(API_BASE) && !url.includes("castor_health");
+        // Chamadas que não são do n8n (IBGE, Supabase, CDNs, health) passam direto.
+        if (!isN8n) {
+          return originalFetch(...args);
+        }
+
+        const method = String(
+          (args[1] && args[1].method) ||
+            (args[0] && args[0].method) ||
+            "GET",
+        ).toUpperCase();
+
+        await _n8nAcquire();
         try {
-          const response = await originalFetch(...args);
-          if (url.startsWith(API_BASE) && !url.includes("castor_health")) {
-            if (response.ok) {
-              setOfflineState(false);
-            } else if (response.status >= 500) {
-              setOfflineState(true);
+          let attempt = 0;
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            try {
+              const response = await originalFetch(...args);
+              if (response.ok) {
+                setOfflineState(false);
+              } else if (response.status >= 500) {
+                setOfflineState(true);
+              }
+
+              const overloaded =
+                response.status === 429 ||
+                response.status === 502 ||
+                response.status === 503 ||
+                response.status === 504;
+              // GET é seguro repetir sempre; POST/PUT/etc. só em 429
+              // (rejeitado antes de processar) para não duplicar mutações.
+              const safeToRetry = method === "GET" || response.status === 429;
+              if (overloaded && safeToRetry && attempt < N8N_MAX_RETRIES) {
+                const ra = parseInt(
+                  response.headers.get("retry-after") || "",
+                  10,
+                );
+                const wait = Number.isFinite(ra)
+                  ? ra * 1000
+                  : N8N_RETRY_BASE_MS * Math.pow(2, attempt) +
+                    Math.floor(Math.random() * 250);
+                attempt++;
+                await _n8nSleep(wait);
+                continue;
+              }
+              return response;
+            } catch (error) {
+              if (error.name !== "AbortError") {
+                setOfflineState(true);
+              }
+              // Falha de rede: repete apenas GET (idempotente).
+              if (
+                method === "GET" &&
+                error.name !== "AbortError" &&
+                attempt < N8N_MAX_RETRIES
+              ) {
+                attempt++;
+                await _n8nSleep(
+                  N8N_RETRY_BASE_MS * Math.pow(2, attempt) +
+                    Math.floor(Math.random() * 250),
+                );
+                continue;
+              }
+              throw error;
             }
           }
-          return response;
-        } catch (error) {
-          if (url.startsWith(API_BASE) && !url.includes("castor_health")) {
-            if (error.name !== "AbortError") {
-              setOfflineState(true);
-            }
-          }
-          throw error;
+        } finally {
+          _n8nRelease();
         }
       };
 
@@ -8417,6 +8553,11 @@
           routes.classList.toggle("active", which === "routes");
           routes.setAttribute("aria-selected", which === "routes");
         }
+        const products = document.getElementById("navProductsBtn");
+        if (products) {
+          products.classList.toggle("active", which === "products");
+          products.setAttribute("aria-selected", which === "products");
+        }
         // Mostrar "Nova Conversa" + lista de sessões somente na aba Chat
         const sbHeader = document.getElementById("sidebar-header");
         const sList = document.getElementById("sessionList");
@@ -8487,16 +8628,182 @@
       document.getElementById("navChatBtn")?.addEventListener("click", () => {
         if (window.RoutesPanel && typeof window.RoutesPanel.hide === "function")
           window.RoutesPanel.hide();
+        if (window.ProductsPanel && typeof window.ProductsPanel.hide === "function")
+          window.ProductsPanel.hide();
         if (typeof hideUsersPage === "function") hideUsersPage();
         if (typeof hideRagDocsPage === "function") hideRagDocsPage();
         document.getElementById("chatArea").style.display = "flex";
         setActiveNav("chat");
       });
       document.getElementById("navRoutesBtn")?.addEventListener("click", () => {
+        if (window.ProductsPanel && typeof window.ProductsPanel.hide === "function")
+          window.ProductsPanel.hide();
         if (window.RoutesPanel && typeof window.RoutesPanel.show === "function")
           window.RoutesPanel.show();
         setActiveNav("routes");
       });
+      document.getElementById("navProductsBtn")?.addEventListener("click", () => {
+        if (window.RoutesPanel && typeof window.RoutesPanel.hide === "function")
+          window.RoutesPanel.hide();
+        if (typeof hideUsersPage === "function") hideUsersPage();
+        if (typeof hideRagDocsPage === "function") hideRagDocsPage();
+        const chatArea = document.getElementById("chatArea");
+        if (chatArea) chatArea.style.display = "none";
+        if (window.ProductsPanel && typeof window.ProductsPanel.show === "function")
+          window.ProductsPanel.show();
+        setActiveNav("products");
+      });
+
+      // ============================================================
+      // ProductsPanel: consome o snapshot (top_products, top_groups,
+      // sales_trend) e renderiza rankings + tendência de faturamento.
+      // Faturamento aqui é SEMPRE de venda real (CFOP de venda).
+      // ============================================================
+      window.ProductsPanel = (() => {
+        let loadedAt = 0;
+        const TTL = 5 * 60 * 1000;
+        const fmtBRL = (v) =>
+          "R$ " +
+          (Number(v) || 0).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        const esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        function bar(label, sub, value, max) {
+          const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 2;
+          return (
+            '<div style="display:flex;flex-direction:column;gap:2px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-primary);">' +
+            "<span>" +
+            esc(label) +
+            (sub ? ' <span style="color:var(--text-secondary)">· ' + esc(sub) + "</span>" : "") +
+            "</span><span>" +
+            fmtBRL(value) +
+            "</span></div>" +
+            '<div style="height:8px;background:var(--border-color,#e5e7eb);border-radius:4px;overflow:hidden;">' +
+            '<div style="height:100%;width:' +
+            pct +
+            '%;background:var(--accent,#2563eb);"></div></div></div>'
+          );
+        }
+        function renderList(el, rows, labelKey, subKey, valKey, emptyMsg) {
+          if (!el) return;
+          if (!rows || !rows.length) {
+            el.innerHTML =
+              '<div style="font-size:13px;color:var(--text-secondary)">' +
+              emptyMsg +
+              "</div>";
+            return;
+          }
+          const max = Math.max(...rows.map((r) => Number(r[valKey]) || 0));
+          el.innerHTML = rows
+            .map((r) => bar(r[labelKey] || "—", subKey ? r[subKey] : "", r[valKey], max))
+            .join("");
+        }
+        function renderTrend(el, serie) {
+          if (!el) return;
+          if (!serie || !serie.length) {
+            el.innerHTML =
+              '<div style="font-size:13px;color:var(--text-secondary)">Sem histórico de venda para o período.</div>';
+            return;
+          }
+          const max = Math.max(...serie.map((p) => Number(p.faturamento) || 0)) || 1;
+          el.innerHTML = serie
+            .map((p) => {
+              const h = Math.max(4, Math.round(((Number(p.faturamento) || 0) / max) * 120));
+              return (
+                '<div title="' +
+                esc(p.ym) +
+                ": " +
+                fmtBRL(p.faturamento) +
+                '" style="flex:1;min-width:8px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;">' +
+                '<div style="width:100%;height:' +
+                h +
+                'px;background:var(--accent,#2563eb);border-radius:3px 3px 0 0;"></div>' +
+                '<span style="font-size:9px;color:var(--text-secondary);transform:rotate(-60deg);white-space:nowrap;">' +
+                esc((p.ym || "").slice(2)) +
+                "</span></div>"
+              );
+            })
+            .join("");
+        }
+        async function load(force) {
+          const status = document.getElementById("prodStatus");
+          const now = Date.now();
+          if (!force && now - loadedAt < TTL && loadedAt) return;
+          if (status) status.textContent = "Carregando…";
+          try {
+            const uid =
+              typeof window.getCurrentUserId === "function"
+                ? window.getCurrentUserId()
+                : "";
+            const p = new URLSearchParams();
+            if (uid) p.set("userId", uid);
+            const url =
+              PANEL_SNAPSHOT_URL + (p.toString() ? "?" + p.toString() : "");
+            const res = await fetch(url, { method: "GET", credentials: "omit" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const j = await res.json();
+            const d = (j && j.data) || {};
+            renderList(
+              document.getElementById("prodTopProducts"),
+              d.top_products,
+              "b1_desc",
+              "grupo_desc",
+              "valor_total",
+              "Sem dados de venda. Faça a ingestão de SD2010 em Documentos → Arquivos-fonte.",
+            );
+            renderList(
+              document.getElementById("prodTopGroups"),
+              d.top_groups,
+              "grupo_desc",
+              null,
+              "valor_total",
+              "Sem dados de grupo.",
+            );
+            renderTrend(document.getElementById("prodTrend"), d.sales_trend);
+            const scope = document.getElementById("prodScopeLabel");
+            if (scope)
+              scope.textContent =
+                d.role === "admin" ? "— visão global" : "— sua carteira";
+            if (status) status.textContent = "";
+            loadedAt = now;
+          } catch (e) {
+            if (status)
+              status.textContent =
+                "Erro ao carregar produtos: " + (e.message || e);
+          }
+        }
+        function show() {
+          const el = document.getElementById("productsPage");
+          if (el) el.style.display = "flex";
+          load(false);
+          if (window.lucide && window.lucide.createIcons) {
+            try {
+              window.lucide.createIcons();
+            } catch (e) {}
+          }
+        }
+        function hide() {
+          const el = document.getElementById("productsPage");
+          if (el) el.style.display = "none";
+        }
+        document
+          .getElementById("prodRefreshBtn")
+          ?.addEventListener("click", () => load(true));
+        return { show, hide, load };
+      })();
 
       // ===== Quick actions (welcome cards + chip strip) =====
       function triggerQuickPrompt(text, autoSubmit) {
@@ -9479,7 +9786,7 @@
           const nl = (snap.leads || []).length;
           const nm = (snap.municipios || []).length;
           if (nc === 0 && nl === 0 && nm === 0) {
-            return "Base Postgres está vazia (0 clientes, 0 leads, 0 municípios). Vá em <strong>Documentos → Arquivos-fonte</strong> e faça <em>upload</em> dos CSVs <strong>SA1010, SA3010, ZA7010, CC2010, SF2010, SC5010</strong> — a ingestão roda automaticamente após o upload.";
+            return "Base Postgres está vazia (0 clientes, 0 leads, 0 municípios). Vá em <strong>Documentos → Arquivos-fonte</strong> e faça <em>upload</em> dos arquivos <strong>SA1010, SA3010, ZA7010, CC2010, SF2010, SC5010</strong> (e, para analise de produtos, <strong>SB1010, SBM010, SD2010, SF4010, SX5010, SZ1010</strong>) — a ingestão roda automaticamente após o upload.";
           }
           if (
             nc === 0 &&
@@ -9507,12 +9814,21 @@
           return idx;
         }
 
+        // Cliente elegível para reativação = INATIVO no cadastro real SA1010
+        // (campo `elegivel_reativacao`, derivado das flags ATIVO/INATIVO). Fallback
+        // para o `a1_ustatus` legado quando o snapshot ainda não traz o campo novo.
+        function isReactivationClient(c) {
+          if (typeof c.elegivel_reativacao === "boolean")
+            return c.elegivel_reativacao;
+          return c.a1_ustatus === "2";
+        }
+
         function deriveReactivation(snap) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const out = [];
           for (const c of snap.clientes || []) {
-            if (c.a1_ustatus !== "2") continue;
+            if (!isReactivationClient(c)) continue;
             const lf = c.last_feedback || null;
             if (lf && lf.outcome === "convertido") continue;
             let elegivel = true,
@@ -9550,7 +9866,7 @@
 
         function deriveActive(snap) {
           const rows = (snap.clientes || []).filter(
-            (c) => c.a1_ustatus !== "2",
+            (c) => !isReactivationClient(c),
           );
           rows.sort(
             (a, b) => (b.faturamento_12m || 0) - (a.faturamento_12m || 0),
@@ -15093,12 +15409,12 @@
                 .filter(Boolean)
                 .join(" · ") || "sem escopo definido no metadata";
             const open = m.open_excluded
-              ? ` · ${m.open_excluded} cliente(s) excluídos por já estarem em roteiro aberto`
+              ? ` · ${m.open_excluded} cliente(s) excluídos por já estarem no kanban/agenda de algum consultor`
               : "";
             const diag =
               m.scope_used === "none"
                 ? `Nenhum cliente bateu nem mesmo no escopo global. Verifique se há clientes ativos/reativáveis no banco.`
-                : `O backend não achou candidatos elegíveis (talvez todos já estejam em roteiros abertos do vendedor, ou estejam marcados como encerrado/não-interessado).`;
+                : `O backend não achou candidatos elegíveis (talvez todos já estejam sendo trabalhados por algum consultor — em roteiro aberto ou card de kanban — ou estejam marcados como encerrado/não-interessado).`;
             el.innerHTML = `<div class="sb-empty" style="padding:18px;color:var(--text-secondary);line-height:1.5">
               <div style="font-weight:600;color:#dc2626">Sem sugestões para este vendedor.</div>
               <div style="font-size:12px;margin-top:6px"><strong>Escopo lido:</strong> ${escopo}${open}</div>
@@ -16877,14 +17193,20 @@
         return (v / 1024 / 1024 / 1024).toFixed(2) + " GB";
       }
 
-      // Apenas as 5 tabelas realmente ingestáveis aparecem na UI.
-      // As demais foram removidas para simplificar (não eram usadas).
+      // Todas as tabelas Protheus ingestáveis aparecem na UI.
       const SOURCE_LABELS = {
+        SA1010: "Clientes (Mestre)",
         SA3010: "Vendedores",
         CC2010: "Municípios",
         SC5010: "Pedidos (Capa)",
         SF2010: "Notas Fiscais (Capa)",
         ZA7010: "Leads / TMKT",
+        SB1010: "Produtos",
+        SBM010: "Grupos de Produto",
+        SD2010: "Itens NF (Venda)",
+        SF4010: "TES / CFOP",
+        SX5010: "Ramos de Atividade",
+        SZ1010: "Histórico de Status",
       };
       const SOURCE_CANONICAL = Object.keys(SOURCE_LABELS);
       let _sourceStatusByTable = {};
@@ -17129,6 +17451,99 @@
           pos: [3, 4, 5, 10, 13, 42, 29],
           types: ["str", "str", "str", "str", "str", "date", "str"],
         },
+        sa1010: {
+          cols: [
+            "a1_codcli_raw",
+            "a1_nome",
+            "a1_nreduz",
+            "a1_pessoa",
+            "a1_cgc",
+            "a1_pricom",
+            "a1_ultcom",
+            "a1_vend",
+            "a1_risco",
+            "a1_lc",
+            "a1_sativ1",
+            "a1_end",
+            "a1_cep",
+            "a1_bairro",
+            "a1_est",
+            "a1_cod_mun",
+            "a1_mun",
+            "a1_ativo_raw",
+            "a1_inativo_raw",
+          ],
+          pos: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 19, 20, 21, 22, 23, 24, 26, 27, 28],
+          types: [
+            "str", "str", "str", "str", "str", "date", "date", "str", "str",
+            "num", "str", "str", "str", "str", "str", "str", "str", "str", "str",
+          ],
+        },
+        sb1010: {
+          cols: ["b1_cod", "b1_desc", "b1_tipo", "b1_um", "b1_grupo", "b1_prv1"],
+          pos: [2, 3, 4, 6, 8, 28],
+          types: ["str", "str", "str", "str", "str", "num"],
+        },
+        sbm010: {
+          cols: ["bm_grupo", "bm_desc"],
+          pos: [2, 3],
+          types: ["str", "str"],
+        },
+        sd2010: {
+          cols: [
+            "d2_item",
+            "d2_cod",
+            "d2_quant",
+            "d2_prcven",
+            "d2_total",
+            "d2_descon",
+            "d2_tes",
+            "d2_cf",
+            "d2_pedido",
+            "d2_cliente",
+            "d2_loja",
+            "d2_doc",
+            "d2_serie",
+            "d2_grupo",
+            "d2_emissao",
+          ],
+          pos: [2, 3, 6, 7, 8, 39, 11, 12, 20, 22, 23, 25, 26, 27, 29],
+          types: [
+            "str", "str", "num", "num", "num", "num", "str", "str", "str",
+            "str", "str", "str", "str", "str", "date",
+          ],
+        },
+        sf4010: {
+          cols: ["f4_codigo", "f4_tipo", "f4_cf", "f4_texto"],
+          pos: [2, 3, 10, 12],
+          types: ["str", "str", "str", "str"],
+        },
+        sx5010: {
+          cols: ["x5_tabela", "x5_chave", "x5_descri"],
+          pos: [2, 3, 4],
+          types: ["str", "str", "str"],
+        },
+        sz1010: {
+          cols: [
+            "z1_cod",
+            "z1_clicod",
+            "z1_loja",
+            "z1_statua",
+            "z1_statud",
+            "z1_riscoa",
+            "z1_riscod",
+            "z1_tpalt",
+            "z1_pedido",
+            "z1_usunom",
+            "z1_data",
+            "z1_hora",
+          ],
+          pos: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+          types: [
+            "str", "str", "str", "str", "str", "str", "str", "str", "str",
+            "str", "date", "str",
+          ],
+        },
       };
       const STREAM_BATCH_SIZE = 500;
 
@@ -17161,14 +17576,46 @@
       }
       function _streamParseDate(s) {
         s = String(s || "").trim();
+        let y = 0,
+          mo = 0,
+          da = 0;
         let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (m) return m[1] + "-" + m[2] + "-" + m[3];
-        m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-        if (m) return m[3] + "-" + m[2] + "-" + m[1];
-        const d = s.replace(/[^0-9]/g, "");
-        if (d.length === 8)
-          return d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6, 8);
-        return null;
+        if (m) {
+          y = +m[1];
+          mo = +m[2];
+          da = +m[3];
+        } else {
+          m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+          if (m) {
+            y = +m[3];
+            mo = +m[2];
+            da = +m[1];
+          } else {
+            const d = s.replace(/[^0-9]/g, "");
+            if (d.length === 8) {
+              y = +d.slice(0, 4);
+              mo = +d.slice(4, 6);
+              da = +d.slice(6, 8);
+            }
+          }
+        }
+        if (!y || !mo || !da) return null;
+        if (mo < 1 || mo > 12 || da < 1 || da > 31 || y < 1900 || y > 2200)
+          return null;
+        const dt = new Date(Date.UTC(y, mo - 1, da));
+        if (
+          dt.getUTCFullYear() !== y ||
+          dt.getUTCMonth() !== mo - 1 ||
+          dt.getUTCDate() !== da
+        )
+          return null;
+        return (
+          y +
+          "-" +
+          String(mo).padStart(2, "0") +
+          "-" +
+          String(da).padStart(2, "0")
+        );
       }
       function _streamParseNum(s) {
         if (typeof s === "number") return Number.isFinite(s) ? s : 0;
@@ -17357,6 +17804,156 @@
         };
       }
 
+      // Ingest de XLSX/XLS parseando NO BROWSER e enviando pelos mesmos endpoints de
+      // streaming (init/batch/finish). Evita o nó "Extract From File" do n8n, que
+      // materializa a planilha inteira em memória e estoura (OOM) em arquivos grandes
+      // como SB1010.xlsx (7.9 MB, 303 colunas). Mantém o file_id no Drive intacto.
+      async function xlsxStreamingIngest(file, canonical, label, userId) {
+        if (typeof XLSX === "undefined" || !XLSX || !XLSX.read) {
+          throw new Error("Biblioteca XLSX não carregada");
+        }
+        const table = String(canonical).toLowerCase();
+        const spec = STREAM_MAPS[table];
+        if (!spec) throw new Error("Tabela sem mapa de parsing: " + canonical);
+
+        showRagBusy(`Lendo ${label} (${fmtSourceSize(file.size)})…`);
+        // header:1 → array-de-arrays preservando a ORDEM das colunas (posicional).
+        // defval:"" garante largura uniforme (a 1ª linha/cabeçalho cobre as 303 cols),
+        // então linhas com células finais vazias não perdem campos → NEED satisfeito.
+        // raw:false + dateNF normaliza datas para YYYY-MM-DD (parser aceita).
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array", dense: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!ws) throw new Error("planilha sem abas");
+        const rows = XLSX.utils.sheet_to_json(ws, {
+          header: 1,
+          defval: "",
+          blankrows: false,
+          raw: false,
+          dateNF: "yyyy-mm-dd",
+        });
+
+        showRagBusy(`Iniciando ingest de ${label}…`);
+        const initResp = await fetch(SOURCE_INGEST_INIT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table, uploaded_by: userId || null }),
+        });
+        const initTxt = await initResp.text();
+        let initParsed = initTxt && initTxt.trim() ? JSON.parse(initTxt) : {};
+        if (Array.isArray(initParsed) && initParsed.length === 1)
+          initParsed = initParsed[0];
+        if (!initResp.ok || (initParsed && initParsed.ok === false)) {
+          throw new Error(
+            (initParsed && initParsed.error) || "init HTTP " + initResp.status,
+          );
+        }
+        const ingestId =
+          initParsed && initParsed.data && initParsed.data.ingest_id;
+        if (!ingestId) throw new Error("init não retornou ingest_id");
+
+        const tStart = Date.now();
+        let totalRows = 0;
+        let batchesSent = 0;
+        let batchErrors = 0;
+        let lastErr = null;
+        const errSamples = [];
+        let pending = [];
+        const colSet = new Set(spec.cols.map((c) => c.toLowerCase()));
+
+        async function flush() {
+          if (pending.length === 0) return;
+          const batch = pending;
+          pending = [];
+          try {
+            const resp = await fetch(SOURCE_INGEST_BATCH_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ingest_id: ingestId, table, rows: batch }),
+            });
+            const t = await resp.text();
+            let p = t && t.trim() ? JSON.parse(t) : {};
+            if (Array.isArray(p) && p.length === 1) p = p[0];
+            if (!resp.ok || (p && p.ok === false)) {
+              const msg = (p && p.error) || "batch HTTP " + resp.status;
+              batchErrors++;
+              if (errSamples.length < 3)
+                errSamples.push(String(msg).slice(0, 240));
+              console.warn("[xlsx-ingest] batch fail:", msg);
+              return;
+            }
+            batchesSent++;
+            totalRows += (p && p.data && p.data.rows_inserted) || batch.length;
+          } catch (err) {
+            batchErrors++;
+            const msg = String(err && (err.message || err));
+            if (errSamples.length < 3) errSamples.push(msg.slice(0, 240));
+            console.warn("[xlsx-ingest] batch threw:", err);
+          }
+        }
+
+        try {
+          let headerSkipped = false;
+          const totalLines = rows.length;
+          for (let r = 0; r < rows.length; r++) {
+            const cols = rows[r];
+            if (!Array.isArray(cols)) continue;
+            if (!headerSkipped) {
+              headerSkipped = true;
+              if (cols.some((p) => colSet.has(String(p).toLowerCase())))
+                continue;
+            }
+            const row = _streamRowFromCols(cols, spec);
+            if (row) pending.push(row);
+            if (pending.length >= STREAM_BATCH_SIZE) {
+              await flush();
+              const pct = totalLines
+                ? Math.min(99, Math.round((r / totalLines) * 100))
+                : 0;
+              showRagBusy(
+                `Ingerindo ${label}: ${totalRows.toLocaleString("pt-BR")} linhas (${pct}%)…`,
+              );
+            }
+          }
+          if (pending.length > 0) await flush();
+        } catch (err) {
+          lastErr = String(err.message || err);
+        }
+
+        const duration_ms = Date.now() - tStart;
+        const aggErr =
+          lastErr ||
+          (batchErrors > 0 && batchesSent === 0
+            ? `Todos os ${batchErrors} batches falharam. Ex.: ${errSamples.join(" | ")}`
+            : null);
+        const finishOk = !aggErr;
+        await fetch(SOURCE_INGEST_FINISH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ingest_id: ingestId,
+            table,
+            rows_in: totalRows,
+            duration_ms,
+            ok: finishOk,
+            error:
+              aggErr ||
+              (batchErrors > 0
+                ? `${batchErrors} batches falharam (${errSamples.join(" | ")})`
+                : null),
+          }),
+        }).catch(() => {});
+
+        if (aggErr) throw new Error(aggErr);
+        return {
+          rows_in: totalRows,
+          duration_ms,
+          batches: batchesSent,
+          batch_errors: batchErrors,
+          err_samples: errSamples,
+        };
+      }
+
       let _sourceUploadCtx = null;
       function startSourceUpload(canonical, label) {
         const input = document.getElementById("sourceCsvInput");
@@ -17370,83 +17967,129 @@
         const { canonical, label } = _sourceUploadCtx;
         _sourceUploadCtx = null;
         const ingestable = INGESTABLE_TABLES.has(canonical);
+        const _isBigFile = file.size > 25 * 1024 * 1024;
         try {
           const ok = await CastorUI.confirm({
             title: `Substituir "${label}"`,
             message:
               `Substituir o arquivo de "${label}" (${canonical}) por "${file.name}"?\n\n` +
               `• Tamanho: ${fmtSourceSize(file.size)}\n` +
-              `• Conteúdo do arquivo no Drive será sobrescrito (file_id preservado)\n` +
+              (ingestable && _isBigFile
+                ? `• Arquivo grande: dados vão direto ao Postgres; a cópia no Drive NÃO será atualizada\n`
+                : `• Conteúdo do arquivo no Drive será sobrescrito (file_id preservado)\n`) +
               (ingestable
-                ? `• Em seguida, os dados serão carregados no Postgres (TRUNCATE + INSERT em transação)`
+                ? `• Em seguida, os dados serão carregados no Postgres (recarga completa da tabela)`
                 : `• Esta tabela não é ingestável — apenas o arquivo no Drive será atualizado`),
           });
           if (!ok) return;
-          showRagBusy(
-            `Enviando "${file.name}" (${fmtSourceSize(file.size)})… pode demorar para arquivos grandes.`,
-          );
-          setStatus(`Enviando ${file.name}…`, "warning");
-          const formData = new FormData();
-          formData.append("filename", canonical);
           const userId =
             (window.castorAuth && window.castorAuth.userId) || null;
-          if (userId) formData.append("user_id", userId);
-          formData.append("file", file, file.name);
-          // Também passa como query (alguns proxies/n8n versões consomem só os campos do form quando há binário)
-          const qs = new URLSearchParams({ filename: canonical });
-          if (userId) qs.set("user_id", userId);
-          const resp = await fetch(SOURCE_REPLACE_URL + "?" + qs.toString(), {
-            method: "POST",
-            body: formData,
-          });
-          if (!resp.ok) {
-            const errTxt = await resp.text().catch(() => "");
-            throw new Error("HTTP " + resp.status + " " + errTxt);
-          }
-          const txt = await resp.text();
-          let parsed = txt && txt.trim() ? JSON.parse(txt) : {};
-          if (Array.isArray(parsed) && parsed.length === 1) parsed = parsed[0];
-          if (parsed && parsed.ok === false) {
-            throw new Error(parsed.error || "upload recusado");
-          }
-          const fileId = parsed && parsed.data && parsed.data.drive_file_id;
-          setStatus(`"${label}" atualizado no Drive.`, "success");
-          if (ingestable && fileId) {
-            // CSV grande → streaming ingest (parsing no browser, sem download no n8n).
-            // XLSX/XLS → fallback para ingest server-side (arquivos pequenos: SA3010/CC2010).
-            const isCsv = /\.csv$/i.test(file.name);
-            if (isCsv) {
-              try {
-                showRagBusy(`Ingerindo ${label}…`);
-                setStatus(`Ingerindo ${canonical} (streaming)…`, "warning");
-                const res = await streamingIngest(
-                  file,
-                  canonical,
-                  label,
-                  userId,
-                );
-                const secs = (res.duration_ms / 1000).toFixed(1);
-                const warn =
-                  res.batch_errors > 0
-                    ? ` ⚠️ ${res.batch_errors} batches com erro (${(res.err_samples || []).slice(0, 1).join(" | ")})`
-                    : "";
-                setStatus(
-                  `${label} ingerido: ${res.rows_in.toLocaleString("pt-BR")} linhas em ${secs}s (${res.batches} batches).${warn}`,
-                  res.batch_errors > 0 ? "warning" : "success",
-                );
-                await loadSourceList();
-              } catch (err) {
-                console.error("[source] streaming ingest erro:", err);
-                setStatus(
-                  `Erro ao ingerir ${canonical}: ${err.message || err}`,
-                  "error",
-                );
-              } finally {
-                hideRagBusy();
+
+          // Decide o caminho de ingest ANTES do upload ao Drive.
+          // CSV → streaming no browser. XLSX/XLS → streaming via SheetJS (se carregado).
+          // Streaming parseia o arquivo LOCAL e NÃO depende do Drive (não usa file_id).
+          const isCsv = /\.csv$/i.test(file.name);
+          const canXlsxStream =
+            !isCsv &&
+            typeof XLSX !== "undefined" &&
+            XLSX &&
+            XLSX.read &&
+            STREAM_MAPS[canonical.toLowerCase()];
+          const canStream = ingestable && (isCsv || canXlsxStream);
+
+          // O upload ao Drive vai por multipart no webhook do n8n, que tem limite de
+          // payload (~16MB padrão). Arquivos grandes (ex.: SD2010.csv 333MB) são
+          // descartados → "binário ausente". Para esses, pulamos o replace e vamos
+          // direto ao ingest local (o que importa p/ o Postgres). O replace só é
+          // OBRIGATÓRIO quando NÃO há streaming (tabela só-Drive ou XLSX sem SheetJS).
+          const SOURCE_REPLACE_MAX_BYTES = 25 * 1024 * 1024; // 25MB
+          const skipDriveReplace =
+            canStream && file.size > SOURCE_REPLACE_MAX_BYTES;
+
+          let fileId = null;
+          if (!skipDriveReplace) {
+            try {
+              showRagBusy(
+                `Enviando "${file.name}" (${fmtSourceSize(file.size)})… pode demorar para arquivos grandes.`,
+              );
+              setStatus(`Enviando ${file.name}…`, "warning");
+              const formData = new FormData();
+              formData.append("filename", canonical);
+              if (userId) formData.append("user_id", userId);
+              formData.append("file", file, file.name);
+              // Também passa como query (alguns proxies/n8n versões consomem só os campos do form quando há binário)
+              const qs = new URLSearchParams({ filename: canonical });
+              if (userId) qs.set("user_id", userId);
+              const resp = await fetch(
+                SOURCE_REPLACE_URL + "?" + qs.toString(),
+                { method: "POST", body: formData },
+              );
+              if (!resp.ok) {
+                const errTxt = await resp.text().catch(() => "");
+                throw new Error("HTTP " + resp.status + " " + errTxt);
               }
-            } else {
-              await triggerSourceIngest(canonical, fileId, label);
+              const txt = await resp.text();
+              let parsed = txt && txt.trim() ? JSON.parse(txt) : {};
+              if (Array.isArray(parsed) && parsed.length === 1)
+                parsed = parsed[0];
+              if (parsed && parsed.ok === false) {
+                throw new Error(parsed.error || "upload recusado");
+              }
+              fileId = parsed && parsed.data && parsed.data.drive_file_id;
+              setStatus(`"${label}" atualizado no Drive.`, "success");
+            } catch (err) {
+              // Sem streaming, o Drive é o único objetivo → erro real.
+              if (!canStream) throw err;
+              // Com streaming, o Drive é secundário → segue para o ingest local.
+              console.warn("[source] Drive replace falhou (seguindo p/ ingest local):", err);
+              setStatus(
+                `Aviso: upload ao Drive falhou (${err.message || err}); ingerindo arquivo local…`,
+                "warning",
+              );
             }
+          } else {
+            setStatus(
+              `Arquivo grande (${fmtSourceSize(file.size)}); ingerindo direto no Postgres (cópia no Drive não atualizada).`,
+              "warning",
+            );
+          }
+
+          if (canStream) {
+            // Ingest a partir do arquivo LOCAL (não depende do replace no Drive).
+            try {
+              showRagBusy(`Ingerindo ${label}…`);
+              setStatus(
+                `Ingerindo ${canonical} (${isCsv ? "streaming" : "xlsx streaming"})…`,
+                "warning",
+              );
+              const res = isCsv
+                ? await streamingIngest(file, canonical, label, userId)
+                : await xlsxStreamingIngest(file, canonical, label, userId);
+              const secs = (res.duration_ms / 1000).toFixed(1);
+              const warn =
+                res.batch_errors > 0
+                  ? ` ⚠️ ${res.batch_errors} batches com erro (${(res.err_samples || []).slice(0, 1).join(" | ")})`
+                  : "";
+              const driveNote = skipDriveReplace
+                ? " (Drive não atualizado — arquivo grande)"
+                : "";
+              setStatus(
+                `${label} ingerido: ${res.rows_in.toLocaleString("pt-BR")} linhas em ${secs}s (${res.batches} batches).${warn}${driveNote}`,
+                res.batch_errors > 0 ? "warning" : "success",
+              );
+              await loadSourceList();
+            } catch (err) {
+              console.error("[source] streaming ingest erro:", err);
+              setStatus(
+                `Erro ao ingerir ${canonical}: ${err.message || err}`,
+                "error",
+              );
+            } finally {
+              hideRagBusy();
+            }
+          } else if (ingestable && fileId) {
+            // XLSX sem SheetJS → fallback server-side (arquivos pequenos).
+            await triggerSourceIngest(canonical, fileId, label);
           } else {
             await loadSourceList();
           }
