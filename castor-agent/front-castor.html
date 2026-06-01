@@ -9895,7 +9895,8 @@
           if (!el) return;
           if (loading) {
             el.classList.add("tab-count-loading");
-            el.innerHTML = '<span class="tab-count-spin" aria-hidden="true"></span>';
+            el.innerHTML =
+              '<span class="tab-count-spin" aria-hidden="true"></span>';
           } else {
             el.classList.remove("tab-count-loading");
             el.textContent = val == null ? "\u2014" : String(val);
