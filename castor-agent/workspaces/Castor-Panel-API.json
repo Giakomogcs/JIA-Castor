@@ -11,10 +11,7 @@
       "name": "Sticky Header",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        54288,
-        41056
-      ]
+      "position": [54288, 41056]
     },
     {
       "parameters": {
@@ -26,10 +23,7 @@
       "name": "Webhook - Snapshot",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        41264
-      ],
+      "position": [54592, 41264],
       "webhookId": "castor-panel-snapshot"
     },
     {
@@ -40,10 +34,7 @@
       "name": "Cache check",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        41264
-      ]
+      "position": [54816, 41264]
     },
     {
       "parameters": {
@@ -74,10 +65,7 @@
       "name": "Cache hit?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        41264
-      ]
+      "position": [55040, 41264]
     },
     {
       "parameters": {
@@ -98,10 +86,7 @@
       "name": "Respond from cache",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        41136
-      ]
+      "position": [55248, 41136]
     },
     {
       "parameters": {
@@ -113,10 +98,7 @@
       "name": "PG: user role",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55248,
-        41376
-      ],
+      "position": [55248, 41376],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -133,10 +115,7 @@
       "name": "Carry role",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55472,
-        41376
-      ]
+      "position": [55472, 41376]
     },
     {
       "parameters": {
@@ -148,10 +127,7 @@
       "name": "PG: snapshot",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55696,
-        41376
-      ],
+      "position": [55696, 41376],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -168,10 +144,7 @@
       "name": "Build snapshot",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55920,
-        41376
-      ]
+      "position": [55920, 41376]
     },
     {
       "parameters": {
@@ -192,10 +165,7 @@
       "name": "Respond Snapshot",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        56128,
-        41376
-      ]
+      "position": [56128, 41376]
     },
     {
       "parameters": {
@@ -208,10 +178,7 @@
       "name": "Webhook - Feedback",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        41856
-      ],
+      "position": [54592, 41856],
       "webhookId": "castor-panel-feedback"
     },
     {
@@ -222,10 +189,7 @@
       "name": "Validate Feedback",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        41856
-      ]
+      "position": [54816, 41856]
     },
     {
       "parameters": {
@@ -256,10 +220,7 @@
       "name": "Feedback valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        41856
-      ]
+      "position": [55040, 41856]
     },
     {
       "parameters": {
@@ -271,10 +232,7 @@
       "name": "Insert Feedback",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55248,
-        41776
-      ],
+      "position": [55248, 41776],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -290,10 +248,7 @@
       "name": "Wrap Feedback",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55472,
-        41776
-      ]
+      "position": [55472, 41776]
     },
     {
       "parameters": {
@@ -314,10 +269,7 @@
       "name": "Respond Feedback OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55696,
-        41776
-      ]
+      "position": [55696, 41776]
     },
     {
       "parameters": {
@@ -339,10 +291,7 @@
       "name": "Respond Feedback Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        42016
-      ]
+      "position": [55248, 42016]
     },
     {
       "parameters": {
@@ -355,10 +304,7 @@
       "name": "Webhook - Route",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        42256
-      ],
+      "position": [54592, 42256],
       "webhookId": "castor-panel-route"
     },
     {
@@ -369,10 +315,7 @@
       "name": "Order Route",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        42256
-      ]
+      "position": [54816, 42256]
     },
     {
       "parameters": {
@@ -403,10 +346,7 @@
       "name": "Route valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        42256
-      ]
+      "position": [55040, 42256]
     },
     {
       "parameters": {
@@ -418,10 +358,7 @@
       "name": "Log Route",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55248,
-        42176
-      ],
+      "position": [55248, 42176],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -438,10 +375,7 @@
       "name": "Wrap Route",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55472,
-        42176
-      ]
+      "position": [55472, 42176]
     },
     {
       "parameters": {
@@ -462,10 +396,7 @@
       "name": "Respond Route OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55696,
-        42176
-      ]
+      "position": [55696, 42176]
     },
     {
       "parameters": {
@@ -487,10 +418,7 @@
       "name": "Respond Route Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        42400
-      ]
+      "position": [55248, 42400]
     },
     {
       "parameters": {
@@ -503,10 +431,7 @@
       "name": "Webhook - Cache Purge",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        42560
-      ],
+      "position": [54592, 42560],
       "webhookId": "castor-panel-cache-purge"
     },
     {
@@ -517,10 +442,7 @@
       "name": "Purge cache",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        42560
-      ]
+      "position": [54816, 42560]
     },
     {
       "parameters": {
@@ -541,10 +463,7 @@
       "name": "Respond Purge",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55040,
-        42560
-      ]
+      "position": [55040, 42560]
     },
     {
       "parameters": {
@@ -556,10 +475,7 @@
       "name": "Webhook - Routes List",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        42864
-      ],
+      "position": [54592, 42864],
       "webhookId": "castor-panel-routes"
     },
     {
@@ -572,10 +488,7 @@
       "name": "PG: route list",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        54816,
-        42864
-      ],
+      "position": [54816, 42864],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -603,10 +516,7 @@
       "name": "Respond Routes List",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55040,
-        42864
-      ]
+      "position": [55040, 42864]
     },
     {
       "parameters": {
@@ -619,10 +529,7 @@
       "name": "Webhook - Route Save",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        43088
-      ],
+      "position": [54592, 43088],
       "webhookId": "castor-panel-route-save"
     },
     {
@@ -633,10 +540,7 @@
       "name": "Validate Save",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        43088
-      ]
+      "position": [54816, 43088]
     },
     {
       "parameters": {
@@ -667,10 +571,7 @@
       "name": "Save valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        43088
-      ]
+      "position": [55040, 43088]
     },
     {
       "parameters": {
@@ -682,10 +583,7 @@
       "name": "PG: save route",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55248,
-        43008
-      ],
+      "position": [55248, 43008],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -712,10 +610,7 @@
       "name": "Respond Save OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55472,
-        43008
-      ]
+      "position": [55472, 43008]
     },
     {
       "parameters": {
@@ -737,10 +632,7 @@
       "name": "Respond Save Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        43216
-      ]
+      "position": [55248, 43216]
     },
     {
       "parameters": {
@@ -753,10 +645,7 @@
       "name": "Webhook - Route Update",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        43440
-      ],
+      "position": [54592, 43440],
       "webhookId": "b99d0414-7156-45a8-b74c-1642bfc517fc"
     },
     {
@@ -767,10 +656,7 @@
       "name": "Validate Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        43440
-      ]
+      "position": [54816, 43440]
     },
     {
       "parameters": {
@@ -801,10 +687,7 @@
       "name": "Update valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        43440
-      ]
+      "position": [55040, 43440]
     },
     {
       "parameters": {
@@ -816,10 +699,7 @@
       "name": "PG: update stop",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55248,
-        43360
-      ],
+      "position": [55248, 43360],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -835,10 +715,7 @@
       "name": "Wrap Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55472,
-        43360
-      ]
+      "position": [55472, 43360]
     },
     {
       "parameters": {
@@ -859,10 +736,7 @@
       "name": "Respond Update OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55696,
-        43360
-      ]
+      "position": [55696, 43360]
     },
     {
       "parameters": {
@@ -884,10 +758,7 @@
       "name": "Respond Update Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        43584
-      ]
+      "position": [55248, 43584]
     },
     {
       "parameters": {
@@ -900,10 +771,7 @@
       "name": "Webhook - AI Route",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54592,
-        43808
-      ],
+      "position": [54592, 43808],
       "webhookId": "castor-panel-ai-route"
     },
     {
@@ -914,10 +782,7 @@
       "name": "Validate AI Route",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54816,
-        43808
-      ]
+      "position": [54816, 43808]
     },
     {
       "parameters": {
@@ -948,10 +813,7 @@
       "name": "AI Route valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55040,
-        43808
-      ]
+      "position": [55040, 43808]
     },
     {
       "parameters": {
@@ -1051,10 +913,7 @@
       "name": "Execute Auto Route Builder",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
-      "position": [
-        55248,
-        43728
-      ]
+      "position": [55248, 43728]
     },
     {
       "parameters": {
@@ -1075,10 +934,7 @@
       "name": "Respond AI Route OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55488,
-        43728
-      ]
+      "position": [55488, 43728]
     },
     {
       "parameters": {
@@ -1100,10 +956,7 @@
       "name": "Respond AI Route Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55248,
-        43952
-      ]
+      "position": [55248, 43952]
     },
     {
       "parameters": {
@@ -1116,10 +969,7 @@
       "name": "Webhook - Client Detail",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        53744,
-        44160
-      ],
+      "position": [53744, 44160],
       "webhookId": "castor-panel-client-detail"
     },
     {
@@ -1130,10 +980,7 @@
       "name": "Validate Client Detail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        53968,
-        44160
-      ]
+      "position": [53968, 44160]
     },
     {
       "parameters": {
@@ -1164,10 +1011,7 @@
       "name": "Client Detail valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        54192,
-        44160
-      ]
+      "position": [54192, 44160]
     },
     {
       "parameters": {
@@ -1179,10 +1023,7 @@
       "name": "PG: client detail",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        54400,
-        44080
-      ],
+      "position": [54400, 44080],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1198,10 +1039,7 @@
       "name": "Wrap Client Detail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54624,
-        44080
-      ]
+      "position": [54624, 44080]
     },
     {
       "parameters": {
@@ -1222,10 +1060,7 @@
       "name": "Respond Client Detail OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        54848,
-        44080
-      ]
+      "position": [54848, 44080]
     },
     {
       "parameters": {
@@ -1247,10 +1082,7 @@
       "name": "Respond Client Detail Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        54784,
-        44288
-      ]
+      "position": [54784, 44288]
     },
     {
       "parameters": {
@@ -1263,10 +1095,7 @@
       "name": "Webhook - Route Reassign",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        44480
-      ],
+      "position": [54656, 44480],
       "webhookId": "castor-panel-route-reassign"
     },
     {
@@ -1277,10 +1106,7 @@
       "name": "Validate Reassign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        44480
-      ]
+      "position": [54880, 44480]
     },
     {
       "parameters": {
@@ -1311,10 +1137,7 @@
       "name": "Reassign valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        44480
-      ]
+      "position": [55104, 44480]
     },
     {
       "parameters": {
@@ -1326,10 +1149,7 @@
       "name": "PG: reassign",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        44384
-      ],
+      "position": [55440, 44384],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1345,10 +1165,7 @@
       "name": "Wrap Reassign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        44384
-      ]
+      "position": [55664, 44384]
     },
     {
       "parameters": {
@@ -1369,10 +1186,7 @@
       "name": "Respond Reassign OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        44384
-      ]
+      "position": [55888, 44384]
     },
     {
       "parameters": {
@@ -1394,10 +1208,7 @@
       "name": "Respond Reassign Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        44624
-      ]
+      "position": [55312, 44624]
     },
     {
       "parameters": {
@@ -1409,10 +1220,7 @@
       "name": "Webhook - Route Metrics",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54576,
-        45056
-      ],
+      "position": [54576, 45056],
       "webhookId": "castor-panel-route-metrics"
     },
     {
@@ -1425,10 +1233,7 @@
       "name": "PG: route metrics",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        54800,
-        45056
-      ],
+      "position": [54800, 45056],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1455,10 +1260,7 @@
       "name": "Respond Metrics",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55024,
-        45056
-      ]
+      "position": [55024, 45056]
     },
     {
       "parameters": {
@@ -1470,10 +1272,7 @@
       "name": "Webhook - Route Detail",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54576,
-        45296
-      ],
+      "position": [54576, 45296],
       "webhookId": "castor-panel-route-detail"
     },
     {
@@ -1486,10 +1285,7 @@
       "name": "PG: route detail",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        54800,
-        45296
-      ],
+      "position": [54800, 45296],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1505,10 +1301,7 @@
       "name": "Wrap Route Detail",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55024,
-        45296
-      ]
+      "position": [55024, 45296]
     },
     {
       "parameters": {
@@ -1529,10 +1322,7 @@
       "name": "Respond Route Detail",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55232,
-        45296
-      ]
+      "position": [55232, 45296]
     },
     {
       "parameters": {
@@ -1545,10 +1335,7 @@
       "name": "Webhook - Stop Remove",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54640,
-        46368
-      ],
+      "position": [54640, 46368],
       "webhookId": "castor-panel-route-stop-remove"
     },
     {
@@ -1559,10 +1346,7 @@
       "name": "Validate Stop Remove",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54864,
-        46368
-      ]
+      "position": [54864, 46368]
     },
     {
       "parameters": {
@@ -1593,10 +1377,7 @@
       "name": "Stop Remove valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55088,
-        46368
-      ]
+      "position": [55088, 46368]
     },
     {
       "parameters": {
@@ -1608,10 +1389,7 @@
       "name": "PG: stop remove",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55296,
-        46176
-      ],
+      "position": [55296, 46176],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1627,10 +1405,7 @@
       "name": "Wrap Stop Remove",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55520,
-        46176
-      ]
+      "position": [55520, 46176]
     },
     {
       "parameters": {
@@ -1651,10 +1426,7 @@
       "name": "Respond Stop Remove OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55744,
-        46176
-      ]
+      "position": [55744, 46176]
     },
     {
       "parameters": {
@@ -1676,10 +1448,7 @@
       "name": "Respond Stop Remove Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55296,
-        46624
-      ]
+      "position": [55296, 46624]
     },
     {
       "parameters": {
@@ -1692,10 +1461,7 @@
       "name": "Webhook - Route Delete",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54688,
-        46896
-      ],
+      "position": [54688, 46896],
       "webhookId": "castor-panel-route-delete"
     },
     {
@@ -1706,10 +1472,7 @@
       "name": "Validate Route Delete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54912,
-        46896
-      ]
+      "position": [54912, 46896]
     },
     {
       "parameters": {
@@ -1740,10 +1503,7 @@
       "name": "Route Delete valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55136,
-        46896
-      ]
+      "position": [55136, 46896]
     },
     {
       "parameters": {
@@ -1755,10 +1515,7 @@
       "name": "PG: route delete",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55344,
-        46816
-      ],
+      "position": [55344, 46816],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1774,10 +1531,7 @@
       "name": "Wrap Route Delete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55568,
-        46816
-      ]
+      "position": [55568, 46816]
     },
     {
       "parameters": {
@@ -1798,10 +1552,7 @@
       "name": "Respond Route Delete OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55792,
-        46816
-      ]
+      "position": [55792, 46816]
     },
     {
       "parameters": {
@@ -1823,10 +1574,7 @@
       "name": "Respond Route Delete Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55344,
-        47040
-      ]
+      "position": [55344, 47040]
     },
     {
       "parameters": {
@@ -1839,10 +1587,7 @@
       "name": "Webhook - addr-override",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        53088,
-        43728
-      ],
+      "position": [53088, 43728],
       "webhookId": "d238df77-55b6-4042-a743-66d9ad86e269"
     },
     {
@@ -1853,10 +1598,7 @@
       "name": "Validate addr-override",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        53312,
-        43728
-      ]
+      "position": [53312, 43728]
     },
     {
       "parameters": {
@@ -1887,10 +1629,7 @@
       "name": "addr-override valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        53536,
-        43728
-      ]
+      "position": [53536, 43728]
     },
     {
       "parameters": {
@@ -1902,10 +1641,7 @@
       "name": "PG: addr-override",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        53744,
-        43648
-      ],
+      "position": [53744, 43648],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -1921,10 +1657,7 @@
       "name": "Wrap addr-override",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        53936,
-        43648
-      ]
+      "position": [53936, 43648]
     },
     {
       "parameters": {
@@ -1945,10 +1678,7 @@
       "name": "Respond addr-override OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        54144,
-        43648
-      ]
+      "position": [54144, 43648]
     },
     {
       "parameters": {
@@ -1970,10 +1700,7 @@
       "name": "Respond addr-override Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        53744,
-        43872
-      ]
+      "position": [53744, 43872]
     },
     {
       "parameters": {
@@ -1986,10 +1713,7 @@
       "name": "Webhook - client-status",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        53744,
-        44160
-      ],
+      "position": [53744, 44160],
       "webhookId": "f191beb4-9446-487c-b317-c8e5947faf63"
     },
     {
@@ -2000,10 +1724,7 @@
       "name": "Validate client-status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        53968,
-        44160
-      ]
+      "position": [53968, 44160]
     },
     {
       "parameters": {
@@ -2034,10 +1755,7 @@
       "name": "client-status valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        54192,
-        44160
-      ]
+      "position": [54192, 44160]
     },
     {
       "parameters": {
@@ -2049,10 +1767,7 @@
       "name": "PG: client-status",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        54400,
-        44080
-      ],
+      "position": [54400, 44080],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2068,10 +1783,7 @@
       "name": "Wrap client-status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54624,
-        44080
-      ]
+      "position": [54624, 44080]
     },
     {
       "parameters": {
@@ -2092,10 +1804,7 @@
       "name": "Respond client-status OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        54848,
-        44080
-      ]
+      "position": [54848, 44080]
     },
     {
       "parameters": {
@@ -2117,10 +1826,7 @@
       "name": "Respond client-status Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        54400,
-        44304
-      ]
+      "position": [54400, 44304]
     },
     {
       "parameters": {
@@ -2133,10 +1839,7 @@
       "name": "Webhook - interaction-add",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        51856,
-        44512
-      ],
+      "position": [51856, 44512],
       "webhookId": "c33f12a1-c2eb-408b-898f-c167e239ded1"
     },
     {
@@ -2147,10 +1850,7 @@
       "name": "Validate interaction-add",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        52080,
-        44512
-      ]
+      "position": [52080, 44512]
     },
     {
       "parameters": {
@@ -2181,10 +1881,7 @@
       "name": "interaction-add valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        52304,
-        44512
-      ]
+      "position": [52304, 44512]
     },
     {
       "parameters": {
@@ -2196,10 +1893,7 @@
       "name": "PG: interaction-add",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        52448,
-        44336
-      ],
+      "position": [52448, 44336],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2215,10 +1909,7 @@
       "name": "Wrap interaction-add",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        52672,
-        44336
-      ]
+      "position": [52672, 44336]
     },
     {
       "parameters": {
@@ -2239,10 +1930,7 @@
       "name": "Respond interaction-add OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        52896,
-        44336
-      ]
+      "position": [52896, 44336]
     },
     {
       "parameters": {
@@ -2264,10 +1952,7 @@
       "name": "Respond interaction-add Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        52512,
-        44640
-      ]
+      "position": [52512, 44640]
     },
     {
       "parameters": {
@@ -2280,10 +1965,7 @@
       "name": "Webhook - interaction-list",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54576,
-        44864
-      ],
+      "position": [54576, 44864],
       "webhookId": "57ab168c-759c-46b8-8cfb-78489a85fd0d"
     },
     {
@@ -2294,10 +1976,7 @@
       "name": "Validate interaction-list",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54800,
-        44864
-      ]
+      "position": [54800, 44864]
     },
     {
       "parameters": {
@@ -2328,10 +2007,7 @@
       "name": "interaction-list valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55024,
-        44864
-      ]
+      "position": [55024, 44864]
     },
     {
       "parameters": {
@@ -2343,10 +2019,7 @@
       "name": "PG: interaction-list",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55232,
-        44784
-      ],
+      "position": [55232, 44784],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2362,10 +2035,7 @@
       "name": "Wrap interaction-list",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55456,
-        44784
-      ]
+      "position": [55456, 44784]
     },
     {
       "parameters": {
@@ -2386,10 +2056,7 @@
       "name": "Respond interaction-list OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55680,
-        44784
-      ]
+      "position": [55680, 44784]
     },
     {
       "parameters": {
@@ -2411,10 +2078,7 @@
       "name": "Respond interaction-list Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55232,
-        45152
-      ]
+      "position": [55232, 45152]
     },
     {
       "parameters": {
@@ -2427,10 +2091,7 @@
       "name": "Webhook - pending-followups",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54640,
-        46032
-      ],
+      "position": [54640, 46032],
       "webhookId": "e5fbe735-a1f2-4744-bf69-e518b48ce282"
     },
     {
@@ -2441,10 +2102,7 @@
       "name": "Validate pending-followups",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54864,
-        46032
-      ]
+      "position": [54864, 46032]
     },
     {
       "parameters": {
@@ -2475,10 +2133,7 @@
       "name": "pending-followups valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55088,
-        46032
-      ]
+      "position": [55088, 46032]
     },
     {
       "parameters": {
@@ -2490,10 +2145,7 @@
       "name": "PG: pending-followups",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55312,
-        45872
-      ],
+      "position": [55312, 45872],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2509,10 +2161,7 @@
       "name": "Wrap pending-followups",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55536,
-        45872
-      ]
+      "position": [55536, 45872]
     },
     {
       "parameters": {
@@ -2533,10 +2182,7 @@
       "name": "Respond pending-followups OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55760,
-        45872
-      ]
+      "position": [55760, 45872]
     },
     {
       "parameters": {
@@ -2558,10 +2204,7 @@
       "name": "Respond pending-followups Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55296,
-        46176
-      ]
+      "position": [55296, 46176]
     },
     {
       "parameters": {
@@ -2574,10 +2217,7 @@
       "name": "Webhook - recent-changes",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54640,
-        46560
-      ],
+      "position": [54640, 46560],
       "webhookId": "5b423d34-a75e-4b39-8b27-03b4863fe8fd"
     },
     {
@@ -2588,10 +2228,7 @@
       "name": "Validate recent-changes",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54864,
-        46560
-      ]
+      "position": [54864, 46560]
     },
     {
       "parameters": {
@@ -2622,10 +2259,7 @@
       "name": "recent-changes valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55088,
-        46560
-      ]
+      "position": [55088, 46560]
     },
     {
       "parameters": {
@@ -2637,10 +2271,7 @@
       "name": "PG: recent-changes",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55296,
-        46368
-      ],
+      "position": [55296, 46368],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2656,10 +2287,7 @@
       "name": "Wrap recent-changes",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55520,
-        46368
-      ]
+      "position": [55520, 46368]
     },
     {
       "parameters": {
@@ -2680,10 +2308,7 @@
       "name": "Respond recent-changes OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55744,
-        46368
-      ]
+      "position": [55744, 46368]
     },
     {
       "parameters": {
@@ -2705,10 +2330,7 @@
       "name": "Respond recent-changes Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55344,
-        46800
-      ]
+      "position": [55344, 46800]
     },
     {
       "parameters": {
@@ -2721,10 +2343,7 @@
       "name": "Webhook - Vendor Offboard",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        47100
-      ],
+      "position": [54656, 47100],
       "webhookId": "castor-panel-vendor-offboard"
     },
     {
@@ -2735,10 +2354,7 @@
       "name": "Validate Offboard",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        47100
-      ]
+      "position": [54880, 47100]
     },
     {
       "parameters": {
@@ -2769,10 +2385,7 @@
       "name": "Offboard valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        47100
-      ]
+      "position": [55104, 47100]
     },
     {
       "parameters": {
@@ -2784,10 +2397,7 @@
       "name": "PG: offboard",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        47000
-      ],
+      "position": [55440, 47000],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2803,10 +2413,7 @@
       "name": "Wrap Offboard",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        47000
-      ]
+      "position": [55664, 47000]
     },
     {
       "parameters": {
@@ -2827,10 +2434,7 @@
       "name": "Respond Offboard OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        47000
-      ]
+      "position": [55888, 47000]
     },
     {
       "parameters": {
@@ -2852,10 +2456,7 @@
       "name": "Respond Offboard Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        47244
-      ]
+      "position": [55312, 47244]
     },
     {
       "parameters": {
@@ -2868,10 +2469,7 @@
       "name": "Webhook - Task Assign",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        47600
-      ],
+      "position": [54656, 47600],
       "webhookId": "castor-panel-task-assign"
     },
     {
@@ -2882,10 +2480,7 @@
       "name": "Validate Task Assign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        47600
-      ]
+      "position": [54880, 47600]
     },
     {
       "parameters": {
@@ -2916,10 +2511,7 @@
       "name": "Task Assign valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        47600
-      ]
+      "position": [55104, 47600]
     },
     {
       "parameters": {
@@ -2931,10 +2523,7 @@
       "name": "PG: task-assign",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        47500
-      ],
+      "position": [55440, 47500],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -2950,10 +2539,7 @@
       "name": "Wrap Task Assign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        47500
-      ]
+      "position": [55664, 47500]
     },
     {
       "parameters": {
@@ -2974,10 +2560,7 @@
       "name": "Respond Task Assign OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        47500
-      ]
+      "position": [55888, 47500]
     },
     {
       "parameters": {
@@ -2999,10 +2582,7 @@
       "name": "Respond Task Assign Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        47744
-      ]
+      "position": [55312, 47744]
     },
     {
       "parameters": {
@@ -3015,10 +2595,7 @@
       "name": "Webhook - Admin Suggest Pool",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        48100
-      ],
+      "position": [54656, 48100],
       "webhookId": "castor-panel-admin-suggest-pool"
     },
     {
@@ -3029,10 +2606,7 @@
       "name": "Validate Suggest Pool",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        48100
-      ]
+      "position": [54880, 48100]
     },
     {
       "parameters": {
@@ -3063,10 +2637,7 @@
       "name": "Suggest Pool valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        48100
-      ]
+      "position": [55104, 48100]
     },
     {
       "parameters": {
@@ -3078,10 +2649,7 @@
       "name": "PG: suggest-pool",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        48000
-      ],
+      "position": [55440, 48000],
       "onError": "continueErrorOutput",
       "credentials": {
         "postgres": {
@@ -3098,10 +2666,7 @@
       "name": "Wrap Suggest Pool",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        48000
-      ]
+      "position": [55664, 48000]
     },
     {
       "parameters": {
@@ -3111,10 +2676,7 @@
       "name": "Format Suggest Pool DB Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        48180
-      ]
+      "position": [55664, 48180]
     },
     {
       "parameters": {
@@ -3135,10 +2697,7 @@
       "name": "Respond Suggest Pool OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        48000
-      ]
+      "position": [55888, 48000]
     },
     {
       "parameters": {
@@ -3160,10 +2719,7 @@
       "name": "Respond Suggest Pool Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        48244
-      ]
+      "position": [55312, 48244]
     },
     {
       "parameters": {
@@ -3176,10 +2732,7 @@
       "name": "Webhook - Card Reassign",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        49000
-      ],
+      "position": [54656, 49000],
       "webhookId": "castor-panel-card-reassign"
     },
     {
@@ -3190,10 +2743,7 @@
       "name": "Validate Card Reassign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        49000
-      ]
+      "position": [54880, 49000]
     },
     {
       "parameters": {
@@ -3224,10 +2774,7 @@
       "name": "Card Reassign valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        49000
-      ]
+      "position": [55104, 49000]
     },
     {
       "parameters": {
@@ -3239,10 +2786,7 @@
       "name": "PG: card reassign",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        48900
-      ],
+      "position": [55440, 48900],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -3258,10 +2802,7 @@
       "name": "Wrap Card Reassign",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        48900
-      ]
+      "position": [55664, 48900]
     },
     {
       "parameters": {
@@ -3282,10 +2823,7 @@
       "name": "Respond Card Reassign OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        48900
-      ]
+      "position": [55888, 48900]
     },
     {
       "parameters": {
@@ -3307,10 +2845,7 @@
       "name": "Respond Card Reassign Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        49144
-      ]
+      "position": [55312, 49144]
     },
     {
       "parameters": {
@@ -3323,10 +2858,7 @@
       "name": "Webhook - Route Move",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54656,
-        49520
-      ],
+      "position": [54656, 49520],
       "webhookId": "castor-panel-route-move"
     },
     {
@@ -3337,10 +2869,7 @@
       "name": "Validate Route Move",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54880,
-        49520
-      ]
+      "position": [54880, 49520]
     },
     {
       "parameters": {
@@ -3371,10 +2900,7 @@
       "name": "Route Move valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55104,
-        49520
-      ]
+      "position": [55104, 49520]
     },
     {
       "parameters": {
@@ -3386,10 +2912,7 @@
       "name": "PG: route move",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55440,
-        49420
-      ],
+      "position": [55440, 49420],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -3405,10 +2928,7 @@
       "name": "Wrap Route Move",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55664,
-        49420
-      ]
+      "position": [55664, 49420]
     },
     {
       "parameters": {
@@ -3429,10 +2949,7 @@
       "name": "Respond Route Move OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55888,
-        49420
-      ]
+      "position": [55888, 49420]
     },
     {
       "parameters": {
@@ -3454,20 +2971,14 @@
       "name": "Respond Route Move Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55312,
-        49664
-      ]
+      "position": [55312, 49664]
     },
     {
       "id": "24ba8815-91df-48e6-a14c-1675c4b681b7",
       "name": "Webhook - admin-followup-clear",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54640,
-        47200
-      ],
+      "position": [54640, 47200],
       "parameters": {
         "httpMethod": "POST",
         "path": "castor-panel-admin-followup-clear",
@@ -3481,10 +2992,7 @@
       "name": "Validate admin-followup-clear",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54864,
-        47200
-      ],
+      "position": [54864, 47200],
       "parameters": {
         "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  target_user_id: String(body.target_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.target_user_id) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
       }
@@ -3494,10 +3002,7 @@
       "name": "admin-followup-clear valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55088,
-        47200
-      ],
+      "position": [55088, 47200],
       "parameters": {
         "conditions": {
           "options": {
@@ -3528,10 +3033,7 @@
       "name": "PG: admin-followup-clear",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55312,
-        47040
-      ],
+      "position": [55312, 47040],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT castor_admin_followup_clear_by_user(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target_user_id }}'::uuid\n) AS row;",
@@ -3549,10 +3051,7 @@
       "name": "Wrap admin-followup-clear",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55536,
-        47040
-      ],
+      "position": [55536, 47040],
       "parameters": {
         "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
       }
@@ -3562,10 +3061,7 @@
       "name": "Respond admin-followup-clear OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55760,
-        47040
-      ],
+      "position": [55760, 47040],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
@@ -3586,10 +3082,7 @@
       "name": "Respond admin-followup-clear Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55296,
-        47344
-      ],
+      "position": [55296, 47344],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",
@@ -3611,10 +3104,7 @@
       "name": "Webhook - admin-followup-transfer",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        54640,
-        47728
-      ],
+      "position": [54640, 47728],
       "parameters": {
         "httpMethod": "POST",
         "path": "castor-panel-admin-followup-transfer",
@@ -3628,10 +3118,7 @@
       "name": "Validate admin-followup-transfer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        54864,
-        47728
-      ],
+      "position": [54864, 47728],
       "parameters": {
         "jsCode": "const body = $json.body || $json;\nconst out = {\n  caller: String(body.caller || body.user_id || ''),\n  target_user_id: String(body.target_user_id || ''),\n  cliente_codigo: String(body.cliente_codigo || ''),\n  new_user_id: String(body.new_user_id || '')\n};\nif (!out.caller) return [{ json: { ok:false, error:'caller obrigatorio' } }];\nif (!out.target_user_id) return [{ json: { ok:false, error:'target_user_id obrigatorio' } }];\nif (!out.cliente_codigo) return [{ json: { ok:false, error:'cliente_codigo obrigatorio' } }];\nif (!out.new_user_id) return [{ json: { ok:false, error:'new_user_id obrigatorio' } }];\nreturn [{ json: Object.assign({ ok:true }, out) }];"
       }
@@ -3641,10 +3128,7 @@
       "name": "admin-followup-transfer valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        55088,
-        47728
-      ],
+      "position": [55088, 47728],
       "parameters": {
         "conditions": {
           "options": {
@@ -3675,10 +3159,7 @@
       "name": "PG: admin-followup-transfer",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        55312,
-        47568
-      ],
+      "position": [55312, 47568],
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT castor_admin_followup_transfer(\n  '{{ $json.caller }}'::uuid,\n  '{{ $json.target_user_id }}'::uuid,\n  '{{ $json.cliente_codigo }}'::text,\n  '{{ $json.new_user_id }}'::uuid\n) AS row;",
@@ -3696,10 +3177,7 @@
       "name": "Wrap admin-followup-transfer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        55536,
-        47568
-      ],
+      "position": [55536, 47568],
       "parameters": {
         "jsCode": "const r = ($input.first() && $input.first().json && $input.first().json.row) || null;\nif (!r) return [{ json: { ok:false, data:null, error:'sem retorno' } }];\nif (r.ok === false) return [{ json: { ok:false, data:null, error: r.error || 'erro' } }];\nreturn [{ json: { ok:true, data: r, error:null } }];"
       }
@@ -3709,10 +3187,7 @@
       "name": "Respond admin-followup-transfer OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55760,
-        47568
-      ],
+      "position": [55760, 47568],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
@@ -3733,10 +3208,7 @@
       "name": "Respond admin-followup-transfer Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        55296,
-        47872
-      ],
+      "position": [55296, 47872],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { ok:false, data:null, error: $json.error || 'invalid input' } }}",

@@ -8,10 +8,7 @@
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        27072,
-        16944
-      ],
+      "position": [27072, 16944],
       "typeVersion": 1,
       "id": "fdcdb515-1100-4432-92b8-f3e80bf6d2c6",
       "name": "Sticky Note - Header"
@@ -27,10 +24,7 @@
       "name": "Sticky Note - Tools",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        28384,
-        17424
-      ]
+      "position": [28384, 17424]
     },
     {
       "parameters": {
@@ -42,10 +36,7 @@
       "name": "Sticky Note - Agent",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        27072,
-        17424
-      ]
+      "position": [27072, 17424]
     },
     {
       "parameters": {
@@ -54,10 +45,7 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        27056,
-        17232
-      ],
+      "position": [27056, 17232],
       "id": "aa866420-db22-49b5-b0ed-5e88b503b393",
       "name": "Test Connection",
       "webhookId": "castor_health"
@@ -73,10 +61,7 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [
-        27136,
-        17520
-      ],
+      "position": [27136, 17520],
       "webhookId": "castor-agent"
     },
     {
@@ -85,10 +70,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.4,
-      "position": [
-        27136,
-        17664
-      ],
+      "position": [27136, 17664],
       "id": "007c2ed6-f454-428d-8e51-734410bfd196",
       "name": "When chat message received",
       "webhookId": "castor-agent-chat"
@@ -123,10 +105,7 @@
       "name": "Edit Fields",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        27392,
-        17520
-      ]
+      "position": [27392, 17520]
     },
     {
       "parameters": {
@@ -140,10 +119,7 @@
       "name": "RAG AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
-      "position": [
-        27600,
-        17520
-      ]
+      "position": [27600, 17520]
     },
     {
       "parameters": {
@@ -153,10 +129,7 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        28192,
-        17520
-      ]
+      "position": [28192, 17520]
     },
     {
       "parameters": {
@@ -168,10 +141,7 @@
       "name": "Stamp user_id",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        27952,
-        17520
-      ],
+      "position": [27952, 17520],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -188,10 +158,7 @@
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.1,
-      "position": [
-        27536,
-        17856
-      ],
+      "position": [27536, 17856],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -206,10 +173,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
       "typeVersion": 1,
-      "position": [
-        27344,
-        17824
-      ],
+      "position": [27344, 17824],
       "id": "94e58130-65fa-40a1-9d7c-139b9eb98d6e",
       "name": "Azure OpenAI Chat Model",
       "credentials": {
@@ -226,10 +190,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.embeddingsAzureOpenAi",
       "typeVersion": 1,
-      "position": [
-        28608,
-        17760
-      ],
+      "position": [28608, 17760],
       "id": "8be2b757-f9cf-4a8a-aaef-a815546833db",
       "name": "Embeddings Azure OpenAI",
       "credentials": {
@@ -257,10 +218,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
-      "position": [
-        28608,
-        17584
-      ],
+      "position": [28608, 17584],
       "id": "4a03cd37-6b58-4444-adb3-12c27852f84a",
       "name": "search_knowledge_base",
       "credentials": {
@@ -280,10 +238,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        27664,
-        17856
-      ],
+      "position": [27664, 17856],
       "id": "0954fe75-6cff-4433-97cd-3a904d985e92",
       "name": "List Documents",
       "credentials": {
@@ -305,10 +260,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        27936,
-        17856
-      ],
+      "position": [27936, 17856],
       "id": "92d36a8b-b40f-4cbe-a6f9-d0a438efaade",
       "name": "Get File Contents",
       "credentials": {
@@ -401,10 +353,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28672,
-        18144
-      ],
+      "position": [28672, 18144],
       "id": "2a524233-a1e8-4332-89db-2a8ef22dd1ee",
       "name": "register_visit_feedback"
     },
@@ -451,10 +400,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28496,
-        18304
-      ],
+      "position": [28496, 18304],
       "id": "dd01afa9-0d1f-4025-bded-4b8cf924a204",
       "name": "classify_client_size"
     },
@@ -521,10 +467,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28144,
-        18304
-      ],
+      "position": [28144, 18304],
       "id": "067e5187-4e86-4e5f-bb8f-b0ea2af12667",
       "name": "get_reactivation_list"
     },
@@ -591,10 +534,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        27968,
-        18304
-      ],
+      "position": [27968, 18304],
       "id": "e94c5784-d4f1-41e0-85bc-cb871fbb45a5",
       "name": "get_prospect_list"
     },
@@ -641,10 +581,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        27792,
-        18304
-      ],
+      "position": [27792, 18304],
       "id": "6dcaef98-e277-4168-aeb2-6d7831dd00c7",
       "name": "get_client_profile"
     },
@@ -701,10 +638,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28848,
-        18304
-      ],
+      "position": [28848, 18304],
       "id": "c4f556a2-93d3-423a-a9e8-3d2ea1765bb9",
       "name": "route_order"
     },
@@ -791,10 +725,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28848,
-        18496
-      ],
+      "position": [28848, 18496],
       "id": "e1f0cfa5-9af2-4c86-817f-9ac7a41c3a49",
       "name": "auto_route_builder"
     },
@@ -841,10 +772,7 @@
       },
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [
-        28320,
-        18304
-      ],
+      "position": [28320, 18304],
       "id": "fbb87459-91b1-495b-b051-34593e518e4a",
       "name": "consultar_cnpj"
     },
@@ -857,10 +785,7 @@
       },
       "id": "b17406fe-befd-4280-913d-37a797fe1448",
       "name": "PruneWebhook",
-      "position": [
-        27088,
-        18032
-      ],
+      "position": [27088, 18032],
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "webhookId": "castor-prune-history"
@@ -873,10 +798,7 @@
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        27296,
-        18032
-      ],
+      "position": [27296, 18032],
       "id": "7d15e3a4-602e-4c29-b000-c01929f52e18",
       "name": "Delete Edited Message",
       "credentials": {
@@ -896,10 +818,7 @@
       },
       "id": "f1a3f93d-e76b-4a04-8e34-e50f6c25a10e",
       "name": "PruneResponse",
-      "position": [
-        27504,
-        18032
-      ],
+      "position": [27504, 18032],
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1
     },
@@ -915,10 +834,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18000
-      ],
+      "position": [29136, 18000],
       "id": "5c2efd26-bd2c-46c9-a27d-c7b4e50fd183",
       "name": "get_pending_followups",
       "credentials": {
@@ -940,10 +856,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18160
-      ],
+      "position": [29136, 18160],
       "id": "7f36ad2e-fee2-45cb-b6cf-6847cbc09f26",
       "name": "get_client_interactions",
       "credentials": {
@@ -965,10 +878,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18320
-      ],
+      "position": [29136, 18320],
       "id": "8f60fc7f-0daf-4210-8492-6327f140aaee",
       "name": "schedule_next_contact",
       "credentials": {
@@ -990,10 +900,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18480
-      ],
+      "position": [29136, 18480],
       "id": "948f3b2f-780d-48f0-99a3-d5c1a65b7fc3",
       "name": "get_recent_data_changes",
       "credentials": {
@@ -1015,10 +922,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18640
-      ],
+      "position": [29136, 18640],
       "id": "a1b2c3d4-0001-4a01-9001-000000000001",
       "name": "get_product_mix",
       "credentials": {
@@ -1040,10 +944,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18800
-      ],
+      "position": [29136, 18800],
       "id": "a1b2c3d4-0002-4a02-9002-000000000002",
       "name": "get_top_products",
       "credentials": {
@@ -1065,10 +966,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        18960
-      ],
+      "position": [29136, 18960],
       "id": "a1b2c3d4-0003-4a03-9003-000000000003",
       "name": "get_top_groups",
       "credentials": {
@@ -1090,10 +988,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        19120
-      ],
+      "position": [29136, 19120],
       "id": "a1b2c3d4-0004-4a04-9004-000000000004",
       "name": "get_sales_trend",
       "credentials": {
@@ -1115,10 +1010,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        19280
-      ],
+      "position": [29136, 19280],
       "id": "a1b2c3d4-0005-4a05-9005-000000000005",
       "name": "get_crosssell_suggestions",
       "credentials": {
@@ -1140,10 +1032,7 @@
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
-      "position": [
-        29136,
-        19440
-      ],
+      "position": [29136, 19440],
       "id": "a1b2c3d4-0006-4a06-9006-000000000006",
       "name": "get_client_status_history",
       "credentials": {

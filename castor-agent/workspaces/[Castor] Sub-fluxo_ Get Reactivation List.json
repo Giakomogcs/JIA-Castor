@@ -62,10 +62,18 @@
   ],
   "pinData": {},
   "connections": {
-    "When called":       { "main": [[{ "node": "Log input", "type": "main", "index": 0 }]] },
-    "Log input":         { "main": [[{ "node": "Prepare params", "type": "main", "index": 0 }]] },
-    "Prepare params":    { "main": [[{ "node": "Fetch snapshot", "type": "main", "index": 0 }]] },
-    "Fetch snapshot":    { "main": [[{ "node": "Filter & respond", "type": "main", "index": 0 }]] }
+    "When called": {
+      "main": [[{ "node": "Log input", "type": "main", "index": 0 }]]
+    },
+    "Log input": {
+      "main": [[{ "node": "Prepare params", "type": "main", "index": 0 }]]
+    },
+    "Prepare params": {
+      "main": [[{ "node": "Fetch snapshot", "type": "main", "index": 0 }]]
+    },
+    "Fetch snapshot": {
+      "main": [[{ "node": "Filter & respond", "type": "main", "index": 0 }]]
+    }
   },
   "active": false,
   "settings": { "executionOrder": "v1" },

@@ -12,7 +12,9 @@
       "position": [0, 0]
     },
     {
-      "parameters": { "jsCode": "const cnpj = String($json.cnpj||'').replace(/\\D/g,'');\nreturn [{json:{cnpj, force_refresh: !!$json.force_refresh}}];" },
+      "parameters": {
+        "jsCode": "const cnpj = String($json.cnpj||'').replace(/\\D/g,'');\nreturn [{json:{cnpj, force_refresh: !!$json.force_refresh}}];"
+      },
       "id": "c0300600-0000-0000-0000-000000000002",
       "name": "Normalize",
       "type": "n8n-nodes-base.code",
@@ -30,12 +32,30 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [400, 0],
-      "credentials": { "postgres": { "id": "__FILL_ME__POSTGRES_CRED_ID__", "name": "Postgres Castor" } }
+      "credentials": {
+        "postgres": {
+          "id": "__FILL_ME__POSTGRES_CRED_ID__",
+          "name": "Postgres Castor"
+        }
+      }
     },
     {
       "parameters": {
-        "conditions": { "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
-          "conditions": [{ "id": "1", "leftValue": "={{ $('Normalize').item.json.force_refresh || !$json.cnpj }}", "rightValue": "true", "operator": { "type": "boolean", "operation": "equals" } }] }
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $('Normalize').item.json.force_refresh || !$json.cnpj }}",
+              "rightValue": "true",
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
       },
       "id": "c0300600-0000-0000-0000-000000000004",
       "name": "Cache miss?",
@@ -70,17 +90,26 @@
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO castor_cnpj_cache(\n  cnpj, razao_social, nome_fantasia, porte, porte_rf, cnae_principal, cnae_descricao,\n  cnaes_secundarios, natureza_juridica, capital_social, data_abertura, idade_anos,\n  situacao_cadastral, data_situacao, motivo_situacao, simples_optante, mei_optante,\n  municipio, uf, bairro, cep, logradouro, telefone, email, socios, qtd_socios,\n  payload, fetched_at, expires_at)\nVALUES ('{{ $('Normalize').item.json.cnpj }}',\n  $1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,NULLIF($10,'')::date,$11,$12,NULLIF($13,'')::date,$14,$15,$16,\n  $17,$18,$19,$20,$21,$22,$23,$24::jsonb,$25,$26::jsonb, NOW(), NOW()+INTERVAL '30 days')\nON CONFLICT (cnpj) DO UPDATE SET\n  razao_social=EXCLUDED.razao_social, nome_fantasia=EXCLUDED.nome_fantasia,\n  porte=EXCLUDED.porte, porte_rf=EXCLUDED.porte_rf, cnae_principal=EXCLUDED.cnae_principal,\n  cnae_descricao=EXCLUDED.cnae_descricao, cnaes_secundarios=EXCLUDED.cnaes_secundarios,\n  natureza_juridica=EXCLUDED.natureza_juridica, capital_social=EXCLUDED.capital_social,\n  data_abertura=EXCLUDED.data_abertura, idade_anos=EXCLUDED.idade_anos,\n  situacao_cadastral=EXCLUDED.situacao_cadastral, data_situacao=EXCLUDED.data_situacao,\n  motivo_situacao=EXCLUDED.motivo_situacao, simples_optante=EXCLUDED.simples_optante,\n  mei_optante=EXCLUDED.mei_optante, municipio=EXCLUDED.municipio, uf=EXCLUDED.uf,\n  bairro=EXCLUDED.bairro, cep=EXCLUDED.cep, logradouro=EXCLUDED.logradouro,\n  telefone=EXCLUDED.telefone, email=EXCLUDED.email, socios=EXCLUDED.socios,\n  qtd_socios=EXCLUDED.qtd_socios, payload=EXCLUDED.payload,\n  fetched_at=NOW(), expires_at=NOW()+INTERVAL '30 days'\nRETURNING *;",
-        "options": { "queryReplacement": "={{ [$json.razao_social ?? null, $json.nome_fantasia ?? null, $json.porte ?? null, $json.porte_rf ?? null, $json.cnae_principal ?? null, $json.cnae_descricao ?? null, JSON.stringify($json.cnaes_secundarios ?? []), $json.natureza_juridica ?? null, $json.capital_social ?? null, $json.data_abertura ?? '', $json.idade_anos ?? null, $json.situacao_cadastral ?? null, $json.data_situacao ?? '', $json.motivo_situacao ?? null, $json.simples_optante ?? null, $json.mei_optante ?? null, $json.municipio ?? null, $json.uf ?? null, $json.bairro ?? null, $json.cep ?? null, $json.logradouro ?? null, $json.telefone ?? null, $json.email ?? null, JSON.stringify($json.socios ?? []), $json.qtd_socios ?? 0, JSON.stringify($json.payload ?? {})] }}" }
+        "options": {
+          "queryReplacement": "={{ [$json.razao_social ?? null, $json.nome_fantasia ?? null, $json.porte ?? null, $json.porte_rf ?? null, $json.cnae_principal ?? null, $json.cnae_descricao ?? null, JSON.stringify($json.cnaes_secundarios ?? []), $json.natureza_juridica ?? null, $json.capital_social ?? null, $json.data_abertura ?? '', $json.idade_anos ?? null, $json.situacao_cadastral ?? null, $json.data_situacao ?? '', $json.motivo_situacao ?? null, $json.simples_optante ?? null, $json.mei_optante ?? null, $json.municipio ?? null, $json.uf ?? null, $json.bairro ?? null, $json.cep ?? null, $json.logradouro ?? null, $json.telefone ?? null, $json.email ?? null, JSON.stringify($json.socios ?? []), $json.qtd_socios ?? 0, JSON.stringify($json.payload ?? {})] }}"
+        }
       },
       "id": "c0300600-0000-0000-0000-000000000007",
       "name": "Upsert cache",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [1400, 0],
-      "credentials": { "postgres": { "id": "__FILL_ME__POSTGRES_CRED_ID__", "name": "Postgres Castor" } }
+      "credentials": {
+        "postgres": {
+          "id": "__FILL_ME__POSTGRES_CRED_ID__",
+          "name": "Postgres Castor"
+        }
+      }
     },
     {
-      "parameters": { "jsCode": "const r = $input.first().json || {};\nconst { payload, ...rest } = r;\nreturn [{ json: { ok:true, data: rest, error:null } }];" },
+      "parameters": {
+        "jsCode": "const r = $input.first().json || {};\nconst { payload, ...rest } = r;\nreturn [{ json: { ok:true, data: rest, error:null } }];"
+      },
       "id": "c0300600-0000-0000-0000-000000000008",
       "name": "Envelope",
       "type": "n8n-nodes-base.code",
@@ -88,7 +117,9 @@
       "position": [1600, 0]
     },
     {
-      "parameters": { "jsCode": "const r = $input.first().json || {};\nconst { payload, ...rest } = r;\nreturn [{ json: { ok:true, data: rest, error:null } }];" },
+      "parameters": {
+        "jsCode": "const r = $input.first().json || {};\nconst { payload, ...rest } = r;\nreturn [{ json: { ok:true, data: rest, error:null } }];"
+      },
       "id": "c0300600-0000-0000-0000-000000000009",
       "name": "Envelope from cache",
       "type": "n8n-nodes-base.code",
@@ -96,7 +127,9 @@
       "position": [800, 200]
     },
     {
-      "parameters": { "jsCode": "// Unifica a resposta da BrasilAPI e da ReceitaWS num objeto estruturado.\nconst j = $input.first().json || {};\nconst cnpj = $('Normalize').item.json.cnpj;\nconst onlyDigits = (s) => String(s || '').replace(/\\D/g, '');\nconst parseDateBR = (s) => { const m = String(s || '').match(/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };\nconst parseISO = (s) => { const d = String(s || '').slice(0, 10); return /^\\d{4}-\\d{2}-\\d{2}$/.test(d) ? d : null; };\nconst toNum = (v) => { if (v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(/\\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : (Number.isFinite(parseFloat(v)) ? parseFloat(v) : null); };\nconst PORTE_MAP = (p) => { const u = String(p || '').toUpperCase(); if (!u) return null; if (u.includes('MEI') || u.includes('MICRO')) return 'pequeno'; if (u.includes('PEQUEN') || u.includes('EPP')) return 'medio'; return 'grande'; };\nconst isBrasilApi = (j.descricao_situacao_cadastral !== undefined) || (j.cnae_fiscal !== undefined) || (j.razao_social !== undefined);\nlet o;\nif (isBrasilApi) {\n  o = {\n    razao_social: j.razao_social ?? null,\n    nome_fantasia: j.nome_fantasia || null,\n    porte_rf: j.porte ?? null,\n    cnae_principal: j.cnae_fiscal ? String(j.cnae_fiscal) : null,\n    cnae_descricao: j.cnae_fiscal_descricao ?? null,\n    cnaes_secundarios: Array.isArray(j.cnaes_secundarios) ? j.cnaes_secundarios.map((c) => ({ codigo: String(c.codigo), descricao: c.descricao })) : [],\n    natureza_juridica: j.natureza_juridica ?? null,\n    capital_social: toNum(j.capital_social),\n    data_abertura: parseISO(j.data_inicio_atividade),\n    situacao_cadastral: j.descricao_situacao_cadastral ?? null,\n    data_situacao: parseISO(j.data_situacao_cadastral),\n    motivo_situacao: j.descricao_motivo_situacao_cadastral || null,\n    simples_optante: (typeof j.opcao_pelo_simples === 'boolean') ? j.opcao_pelo_simples : null,\n    mei_optante: (typeof j.opcao_pelo_mei === 'boolean') ? j.opcao_pelo_mei : null,\n    municipio: j.municipio ?? null,\n    uf: j.uf ?? null,\n    bairro: j.bairro ?? null,\n    cep: j.cep ? onlyDigits(j.cep) : null,\n    logradouro: [j.descricao_tipo_de_logradouro, j.logradouro, j.numero].filter(Boolean).join(' ') || null,\n    telefone: j.ddd_telefone_1 ?? null,\n    email: j.email ?? null,\n    socios: Array.isArray(j.qsa) ? j.qsa.map((s) => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio, faixa_etaria: s.faixa_etaria ?? null })) : [],\n  };\n} else {\n  const ap = Array.isArray(j.atividade_principal) ? j.atividade_principal[0] : null;\n  o = {\n    razao_social: j.nome ?? null,\n    nome_fantasia: j.fantasia || null,\n    porte_rf: j.porte ?? null,\n    cnae_principal: ap ? onlyDigits(ap.code) : null,\n    cnae_descricao: ap ? ap.text : null,\n    cnaes_secundarios: Array.isArray(j.atividades_secundarias) ? j.atividades_secundarias.map((c) => ({ codigo: onlyDigits(c.code), descricao: c.text })) : [],\n    natureza_juridica: j.natureza_juridica ?? null,\n    capital_social: toNum(j.capital_social),\n    data_abertura: parseDateBR(j.abertura),\n    situacao_cadastral: j.situacao ?? null,\n    data_situacao: parseDateBR(j.data_situacao),\n    motivo_situacao: j.motivo_situacao || null,\n    simples_optante: (j.simples && typeof j.simples.optante === 'boolean') ? j.simples.optante : null,\n    mei_optante: (j.simei && typeof j.simei.optante === 'boolean') ? j.simei.optante : null,\n    municipio: j.municipio ?? null,\n    uf: j.uf ?? null,\n    bairro: j.bairro ?? null,\n    cep: j.cep ? onlyDigits(j.cep) : null,\n    logradouro: [j.logradouro, j.numero].filter(Boolean).join(' ') || null,\n    telefone: j.telefone ?? null,\n    email: j.email ?? null,\n    socios: Array.isArray(j.qsa) ? j.qsa.map((s) => ({ nome: s.nome, qualificacao: s.qual, faixa_etaria: s.faixa_etaria ?? null })) : [],\n  };\n}\nif (!o.razao_social && !o.cnae_principal) { return [{ json: { __cnpj_error: true, cnpj, payload: j } }]; }\no.cnpj = cnpj;\no.porte = PORTE_MAP(o.porte_rf);\no.qtd_socios = Array.isArray(o.socios) ? o.socios.length : 0;\no.idade_anos = o.data_abertura ? Math.max(0, Math.floor((Date.now() - new Date(o.data_abertura).getTime()) / (365.25 * 24 * 3600 * 1000))) : null;\no.payload = j;\nreturn [{ json: o }];" },
+      "parameters": {
+        "jsCode": "// Unifica a resposta da BrasilAPI e da ReceitaWS num objeto estruturado.\nconst j = $input.first().json || {};\nconst cnpj = $('Normalize').item.json.cnpj;\nconst onlyDigits = (s) => String(s || '').replace(/\\D/g, '');\nconst parseDateBR = (s) => { const m = String(s || '').match(/^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };\nconst parseISO = (s) => { const d = String(s || '').slice(0, 10); return /^\\d{4}-\\d{2}-\\d{2}$/.test(d) ? d : null; };\nconst toNum = (v) => { if (v === null || v === undefined || v === '') return null; const n = parseFloat(String(v).replace(/\\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : (Number.isFinite(parseFloat(v)) ? parseFloat(v) : null); };\nconst PORTE_MAP = (p) => { const u = String(p || '').toUpperCase(); if (!u) return null; if (u.includes('MEI') || u.includes('MICRO')) return 'pequeno'; if (u.includes('PEQUEN') || u.includes('EPP')) return 'medio'; return 'grande'; };\nconst isBrasilApi = (j.descricao_situacao_cadastral !== undefined) || (j.cnae_fiscal !== undefined) || (j.razao_social !== undefined);\nlet o;\nif (isBrasilApi) {\n  o = {\n    razao_social: j.razao_social ?? null,\n    nome_fantasia: j.nome_fantasia || null,\n    porte_rf: j.porte ?? null,\n    cnae_principal: j.cnae_fiscal ? String(j.cnae_fiscal) : null,\n    cnae_descricao: j.cnae_fiscal_descricao ?? null,\n    cnaes_secundarios: Array.isArray(j.cnaes_secundarios) ? j.cnaes_secundarios.map((c) => ({ codigo: String(c.codigo), descricao: c.descricao })) : [],\n    natureza_juridica: j.natureza_juridica ?? null,\n    capital_social: toNum(j.capital_social),\n    data_abertura: parseISO(j.data_inicio_atividade),\n    situacao_cadastral: j.descricao_situacao_cadastral ?? null,\n    data_situacao: parseISO(j.data_situacao_cadastral),\n    motivo_situacao: j.descricao_motivo_situacao_cadastral || null,\n    simples_optante: (typeof j.opcao_pelo_simples === 'boolean') ? j.opcao_pelo_simples : null,\n    mei_optante: (typeof j.opcao_pelo_mei === 'boolean') ? j.opcao_pelo_mei : null,\n    municipio: j.municipio ?? null,\n    uf: j.uf ?? null,\n    bairro: j.bairro ?? null,\n    cep: j.cep ? onlyDigits(j.cep) : null,\n    logradouro: [j.descricao_tipo_de_logradouro, j.logradouro, j.numero].filter(Boolean).join(' ') || null,\n    telefone: j.ddd_telefone_1 ?? null,\n    email: j.email ?? null,\n    socios: Array.isArray(j.qsa) ? j.qsa.map((s) => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio, faixa_etaria: s.faixa_etaria ?? null })) : [],\n  };\n} else {\n  const ap = Array.isArray(j.atividade_principal) ? j.atividade_principal[0] : null;\n  o = {\n    razao_social: j.nome ?? null,\n    nome_fantasia: j.fantasia || null,\n    porte_rf: j.porte ?? null,\n    cnae_principal: ap ? onlyDigits(ap.code) : null,\n    cnae_descricao: ap ? ap.text : null,\n    cnaes_secundarios: Array.isArray(j.atividades_secundarias) ? j.atividades_secundarias.map((c) => ({ codigo: onlyDigits(c.code), descricao: c.text })) : [],\n    natureza_juridica: j.natureza_juridica ?? null,\n    capital_social: toNum(j.capital_social),\n    data_abertura: parseDateBR(j.abertura),\n    situacao_cadastral: j.situacao ?? null,\n    data_situacao: parseDateBR(j.data_situacao),\n    motivo_situacao: j.motivo_situacao || null,\n    simples_optante: (j.simples && typeof j.simples.optante === 'boolean') ? j.simples.optante : null,\n    mei_optante: (j.simei && typeof j.simei.optante === 'boolean') ? j.simei.optante : null,\n    municipio: j.municipio ?? null,\n    uf: j.uf ?? null,\n    bairro: j.bairro ?? null,\n    cep: j.cep ? onlyDigits(j.cep) : null,\n    logradouro: [j.logradouro, j.numero].filter(Boolean).join(' ') || null,\n    telefone: j.telefone ?? null,\n    email: j.email ?? null,\n    socios: Array.isArray(j.qsa) ? j.qsa.map((s) => ({ nome: s.nome, qualificacao: s.qual, faixa_etaria: s.faixa_etaria ?? null })) : [],\n  };\n}\nif (!o.razao_social && !o.cnae_principal) { return [{ json: { __cnpj_error: true, cnpj, payload: j } }]; }\no.cnpj = cnpj;\no.porte = PORTE_MAP(o.porte_rf);\no.qtd_socios = Array.isArray(o.socios) ? o.socios.length : 0;\no.idade_anos = o.data_abertura ? Math.max(0, Math.floor((Date.now() - new Date(o.data_abertura).getTime()) / (365.25 * 24 * 3600 * 1000))) : null;\no.payload = j;\nreturn [{ json: o }];"
+      },
       "id": "c0300600-0000-0000-0000-00000000000a",
       "name": "Normalize RF",
       "type": "n8n-nodes-base.code",
@@ -106,14 +139,36 @@
   ],
   "pinData": {},
   "connections": {
-    "When called": { "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]] },
-    "Normalize": { "main": [[{ "node": "Check cache", "type": "main", "index": 0 }]] },
-    "Check cache": { "main": [[{ "node": "Cache miss?", "type": "main", "index": 0 }]] },
-    "Cache miss?": { "main": [[{ "node": "Fetch BrasilAPI", "type": "main", "index": 0 }], [{ "node": "Envelope from cache", "type": "main", "index": 0 }]] },
-    "Fetch BrasilAPI": { "main": [[{ "node": "Normalize RF", "type": "main", "index": 0 }], [{ "node": "Fallback ReceitaWS", "type": "main", "index": 0 }]] },
-    "Fallback ReceitaWS": { "main": [[{ "node": "Normalize RF", "type": "main", "index": 0 }]] },
-    "Normalize RF": { "main": [[{ "node": "Upsert cache", "type": "main", "index": 0 }]] },
-    "Upsert cache": { "main": [[{ "node": "Envelope", "type": "main", "index": 0 }]] }
+    "When called": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    },
+    "Normalize": {
+      "main": [[{ "node": "Check cache", "type": "main", "index": 0 }]]
+    },
+    "Check cache": {
+      "main": [[{ "node": "Cache miss?", "type": "main", "index": 0 }]]
+    },
+    "Cache miss?": {
+      "main": [
+        [{ "node": "Fetch BrasilAPI", "type": "main", "index": 0 }],
+        [{ "node": "Envelope from cache", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch BrasilAPI": {
+      "main": [
+        [{ "node": "Normalize RF", "type": "main", "index": 0 }],
+        [{ "node": "Fallback ReceitaWS", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fallback ReceitaWS": {
+      "main": [[{ "node": "Normalize RF", "type": "main", "index": 0 }]]
+    },
+    "Normalize RF": {
+      "main": [[{ "node": "Upsert cache", "type": "main", "index": 0 }]]
+    },
+    "Upsert cache": {
+      "main": [[{ "node": "Envelope", "type": "main", "index": 0 }]]
+    }
   },
   "active": false,
   "settings": { "executionOrder": "v1" },

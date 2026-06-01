@@ -11,10 +11,7 @@
       "name": "Sticky Note Header",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        39312,
-        20336
-      ]
+      "position": [39312, 20336]
     },
     {
       "parameters": {
@@ -26,10 +23,7 @@
       "name": "Webhook - Source List",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        20704
-      ],
+      "position": [39584, 20704],
       "webhookId": "castor-source-list"
     },
     {
@@ -59,10 +53,7 @@
       "name": "Drive: List folder",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [
-        39792,
-        20704
-      ],
+      "position": [39792, 20704],
       "alwaysOutputData": true,
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -79,10 +70,7 @@
       "name": "Build list response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40016,
-        20704
-      ]
+      "position": [40016, 20704]
     },
     {
       "parameters": {
@@ -103,10 +91,7 @@
       "name": "Respond List",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        20704
-      ]
+      "position": [40240, 20704]
     },
     {
       "parameters": {
@@ -118,10 +103,7 @@
       "name": "Webhook - Status",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        20928
-      ],
+      "position": [39584, 20928],
       "webhookId": "castor-source-status"
     },
     {
@@ -134,10 +116,7 @@
       "name": "PG: sources_status",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        39792,
-        20928
-      ],
+      "position": [39792, 20928],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -165,10 +144,7 @@
       "name": "Respond Status",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        20928
-      ]
+      "position": [40240, 20928]
     },
     {
       "parameters": {
@@ -183,10 +159,7 @@
       "name": "Webhook - Source Replace",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        21168
-      ],
+      "position": [39584, 21168],
       "webhookId": "castor-source-replace"
     },
     {
@@ -197,10 +170,7 @@
       "name": "Validate replace",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        39792,
-        21168
-      ]
+      "position": [39792, 21168]
     },
     {
       "parameters": {
@@ -231,10 +201,7 @@
       "name": "Replace valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        40016,
-        21168
-      ]
+      "position": [40016, 21168]
     },
     {
       "parameters": {
@@ -248,19 +215,14 @@
           }
         },
         "options": {
-          "fields": [
-            "*"
-          ]
+          "fields": ["*"]
         }
       },
       "id": "90b94265-70cf-4e69-b73b-26c98a16df44",
       "name": "Drive: Find existing",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [
-        40240,
-        21088
-      ],
+      "position": [40240, 21088],
       "alwaysOutputData": true,
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -278,10 +240,7 @@
       "name": "Pick existing match",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40464,
-        21088
-      ]
+      "position": [40464, 21088]
     },
     {
       "parameters": {
@@ -312,10 +271,7 @@
       "name": "Has existing?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        40672,
-        21088
-      ]
+      "position": [40672, 21088]
     },
     {
       "parameters": {
@@ -347,10 +303,7 @@
       "name": "Drive: Update content",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        40896,
-        21008
-      ],
+      "position": [40896, 21008],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "1yxLK6IGIPQiU21B",
@@ -382,10 +335,7 @@
       "name": "Drive: Rename (canonical)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        41120,
-        21008
-      ],
+      "position": [41120, 21008],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "1yxLK6IGIPQiU21B",
@@ -402,10 +352,7 @@
       "name": "Reattach binary (create)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40896,
-        21184
-      ]
+      "position": [40896, 21184]
     },
     {
       "parameters": {
@@ -427,10 +374,7 @@
       "name": "Drive: Upload new",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [
-        41120,
-        21184
-      ],
+      "position": [41120, 21184],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "1yxLK6IGIPQiU21B",
@@ -446,10 +390,7 @@
       "name": "Build replace result",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        41344,
-        21088
-      ]
+      "position": [41344, 21088]
     },
     {
       "parameters": {
@@ -470,10 +411,7 @@
       "name": "Respond Replace OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        41552,
-        21088
-      ]
+      "position": [41552, 21088]
     },
     {
       "parameters": {
@@ -495,10 +433,7 @@
       "name": "Respond Replace Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        21328
-      ]
+      "position": [40240, 21328]
     },
     {
       "parameters": {
@@ -511,10 +446,7 @@
       "name": "Webhook - Ingest",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        21600
-      ],
+      "position": [39584, 21600],
       "webhookId": "castor-source-ingest"
     },
     {
@@ -525,10 +457,7 @@
       "name": "Validate ingest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        39792,
-        21600
-      ]
+      "position": [39792, 21600]
     },
     {
       "parameters": {
@@ -559,10 +488,7 @@
       "name": "Ingest valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        40016,
-        21600
-      ]
+      "position": [40016, 21600]
     },
     {
       "parameters": {
@@ -574,10 +500,7 @@
       "name": "PG: ingest_log_start",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        40240,
-        21520
-      ],
+      "position": [40240, 21520],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -593,10 +516,7 @@
       "name": "Carry ingest ctx",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40464,
-        21520
-      ]
+      "position": [40464, 21520]
     },
     {
       "parameters": {
@@ -614,10 +534,7 @@
       "name": "Drive: Download CSV",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
-      "position": [
-        40672,
-        21520
-      ],
+      "position": [40672, 21520],
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "1yxLK6IGIPQiU21B",
@@ -633,10 +550,7 @@
       "name": "Sniff format",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40784,
-        21520
-      ]
+      "position": [40784, 21520]
     },
     {
       "parameters": {
@@ -666,10 +580,7 @@
       "name": "Is CSV?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        40912,
-        21520
-      ]
+      "position": [40912, 21520]
     },
     {
       "parameters": {
@@ -684,10 +595,7 @@
       "name": "Extract From File",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
-      "position": [
-        41056,
-        21680
-      ]
+      "position": [41056, 21680]
     },
     {
       "parameters": {
@@ -697,10 +605,7 @@
       "name": "XLSX rows to text",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        41168,
-        21680
-      ]
+      "position": [41168, 21680]
     },
     {
       "parameters": {
@@ -710,10 +615,7 @@
       "name": "Parse positional",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        41296,
-        21504
-      ]
+      "position": [41296, 21504]
     },
     {
       "parameters": {
@@ -727,10 +629,7 @@
       "name": "PG: apply ingest",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        41520,
-        21504
-      ],
+      "position": [41520, 21504],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -748,10 +647,7 @@
       "name": "Build finish payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        41744,
-        21504
-      ]
+      "position": [41744, 21504]
     },
     {
       "parameters": {
@@ -763,10 +659,7 @@
       "name": "PG: ingest_log_finish",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        41936,
-        21504
-      ],
+      "position": [41936, 21504],
       "credentials": {
         "postgres": {
           "id": "jFjeYH6Nt3aRNkoM",
@@ -794,10 +687,7 @@
       "name": "Respond Ingest",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        42144,
-        21504
-      ]
+      "position": [42144, 21504]
     },
     {
       "parameters": {
@@ -819,10 +709,7 @@
       "name": "Respond Ingest Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        21744
-      ]
+      "position": [40240, 21744]
     },
     {
       "parameters": {
@@ -835,10 +722,7 @@
       "name": "Sticky Note Streaming",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        39312,
-        21960
-      ]
+      "position": [39312, 21960]
     },
     {
       "parameters": {
@@ -851,10 +735,7 @@
       "name": "Webhook - Ingest Init",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        22300
-      ],
+      "position": [39584, 22300],
       "webhookId": "castor-source-ingest-init"
     },
     {
@@ -865,10 +746,7 @@
       "name": "Validate init",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        39792,
-        22300
-      ]
+      "position": [39792, 22300]
     },
     {
       "parameters": {
@@ -899,10 +777,7 @@
       "name": "Init valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [
-        40016,
-        22300
-      ]
+      "position": [40016, 22300]
     },
     {
       "parameters": {
@@ -914,10 +789,7 @@
       "name": "PG: init",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        40240,
-        22220
-      ],
+      "position": [40240, 22220],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -934,10 +806,7 @@
       "name": "Build init response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40464,
-        22220
-      ]
+      "position": [40464, 22220]
     },
     {
       "parameters": {
@@ -958,10 +827,7 @@
       "name": "Respond Init",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40688,
-        22220
-      ]
+      "position": [40688, 22220]
     },
     {
       "parameters": {
@@ -983,10 +849,7 @@
       "name": "Respond Init Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        22440
-      ]
+      "position": [40240, 22440]
     },
     {
       "parameters": {
@@ -999,10 +862,7 @@
       "name": "Webhook - Ingest Batch",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        22600
-      ],
+      "position": [39584, 22600],
       "webhookId": "castor-source-ingest-batch"
     },
     {
@@ -1013,10 +873,7 @@
       "name": "Build batch SQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        39792,
-        22600
-      ]
+      "position": [39792, 22600]
     },
     {
       "parameters": {
@@ -1030,10 +887,7 @@
       "name": "PG: batch",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        40016,
-        22600
-      ],
+      "position": [40016, 22600],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -1051,10 +905,7 @@
       "name": "Build batch response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        40240,
-        22600
-      ]
+      "position": [40240, 22600]
     },
     {
       "parameters": {
@@ -1075,10 +926,7 @@
       "name": "Respond Batch",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40464,
-        22600
-      ]
+      "position": [40464, 22600]
     },
     {
       "parameters": {
@@ -1091,10 +939,7 @@
       "name": "Webhook - Ingest Finish",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        39584,
-        22900
-      ],
+      "position": [39584, 22900],
       "webhookId": "castor-source-ingest-finish"
     },
     {
@@ -1105,10 +950,7 @@
       "name": "Build finish SQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        39792,
-        22900
-      ]
+      "position": [39792, 22900]
     },
     {
       "parameters": {
@@ -1122,10 +964,7 @@
       "name": "PG: finish",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [
-        40016,
-        22900
-      ],
+      "position": [40016, 22900],
       "alwaysOutputData": true,
       "credentials": {
         "postgres": {
@@ -1154,10 +993,7 @@
       "name": "Respond Finish",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [
-        40240,
-        22900
-      ]
+      "position": [40240, 22900]
     },
     {
       "parameters": {
@@ -1187,10 +1023,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        40128,
-        22900
-      ],
+      "position": [40128, 22900],
       "id": "c1b2c3d4-5555-4555-8555-555555555555",
       "name": "Notify cache purge",
       "continueOnFail": true,
