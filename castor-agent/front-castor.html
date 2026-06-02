@@ -3859,8 +3859,8 @@
                         margin-top: 2px;
                       "
                     >
-                      Vincula o login ao código A3 do Protheus. Necessário para o
-                      consultor ver a própria carteira.
+                      Vincula o login ao código A3 do Protheus. Necessário para
+                      o consultor ver a própria carteira.
                     </div>
                   </div>
                   <div class="user-form-col">
@@ -5074,7 +5074,9 @@
             <input type="checkbox" id="followupsSelectAll" />
             Selecionar todos
           </label>
-          <span id="followupsSelCount" style="font-size: 0.78rem; color: var(--text-secondary)"
+          <span
+            id="followupsSelCount"
+            style="font-size: 0.78rem; color: var(--text-secondary)"
             >0 selecionados</span
           >
           <span style="flex: 1"></span>
@@ -5160,7 +5162,12 @@
         >
           <select
             id="portfolioVendorSelect"
-            style="font-size: 12px; padding: 4px 8px; display: none; min-width: 200px"
+            style="
+              font-size: 12px;
+              padding: 4px 8px;
+              display: none;
+              min-width: 200px;
+            "
           ></select>
           <input
             id="portfolioSearch"
@@ -14840,7 +14847,8 @@
             if (!codes.includes(c)) _fuSelected.delete(c);
           const n = _fuSelected.size;
           const cntEl = $("followupsSelCount");
-          if (cntEl) cntEl.textContent = n + " selecionado" + (n === 1 ? "" : "s");
+          if (cntEl)
+            cntEl.textContent = n + " selecionado" + (n === 1 ? "" : "s");
           const btn = $("followupsRouteBtn");
           if (btn) {
             btn.disabled = n < 1;
@@ -14947,7 +14955,13 @@
 
         // ---------- Interaction add modal ----------
         let _iaCtx = null;
-        function openInteractionAdd(clienteCodigo, nome, routeId, onSaved, defaults) {
+        function openInteractionAdd(
+          clienteCodigo,
+          nome,
+          routeId,
+          onSaved,
+          defaults,
+        ) {
           // Admin não responde cards — apenas observa / atribui vendedores.
           try {
             const role =
@@ -15874,8 +15888,8 @@
         function _isAdmin() {
           try {
             return (
-              (window.getCurrentUserRole &&
-                window.getCurrentUserRole()) === "admin"
+              (window.getCurrentUserRole && window.getCurrentUserRole()) ===
+              "admin"
             );
           } catch (e) {
             return false;
@@ -16000,9 +16014,7 @@
             _renderList(_all);
             const sub = $("portfolioSubtitle");
             if (sub) {
-              const who = data.target_name
-                ? `${data.target_name}`
-                : "vendedor";
+              const who = data.target_name ? `${data.target_name}` : "vendedor";
               sub.textContent = data.vendor_code
                 ? `${who} · código ${data.vendor_code} · ${data.total} empresa(s)`
                 : isAdmin
@@ -16041,7 +16053,10 @@
           }
           el.innerHTML = rows
             .map((c) => {
-              const st = STATUS_CHIP[c.status_real] || ["#94a3b8", c.status_real || "—"];
+              const st = STATUS_CHIP[c.status_real] || [
+                "#94a3b8",
+                c.status_real || "—",
+              ];
               const phone = c.contato_tel
                 ? `<a class="sb-act" href="tel:${esc(c.contato_tel)}" onclick="event.stopPropagation()">📞</a>`
                 : "";
